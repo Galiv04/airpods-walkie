@@ -12,12 +12,13 @@ CLAY_D = (186, 92, 64)
 WHITE = (252, 250, 245)
 SKY = (122, 170, 200)
 
-def wob(x, y, amp=3.0):
+def wob(x, y, amp=1.6):
     """Leggero tremolio da disegno a mano (deterministico)."""
-    return (x + amp * K * math.sin(y * 0.021 + x * 0.007) + amp * 0.5 * K * math.sin(y * 0.071),
-            y + amp * K * math.cos(x * 0.019 - y * 0.005) + amp * 0.5 * K * math.cos(x * 0.063))
+    # solo onde lente: linee morbide con una leggera deriva, niente scatti
+    return (x + amp * K * math.sin(y * 0.011 + x * 0.004),
+            y + amp * K * math.cos(x * 0.010 - y * 0.003))
 
-def rrect_pts(x0, y0, x1, y1, r, n=14):
+def rrect_pts(x0, y0, x1, y1, r, n=24):
     pts = []
     for cx, cy, a0 in ((x1 - r, y0 + r, -90), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)):
         for i in range(n + 1):
@@ -25,13 +26,16 @@ def rrect_pts(x0, y0, x1, y1, r, n=14):
             pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
     return pts
 
-def ellipse_pts(cx, cy, rx, ry, n=90):
+def ellipse_pts(cx, cy, rx, ry, n=160):
     return [(cx + rx * math.cos(2 * math.pi * i / n), cy + ry * math.sin(2 * math.pi * i / n)) for i in range(n)]
 
-def shape(d, pts, fill, width=11, amp=3.0):
+def shape(d, pts, fill, width=11, amp=1.6):
     pts = [wob(x * K, y * K, amp) for x, y in pts]
-    d.polygon(pts, fill=fill, outline=INK, width=width * K)
-    d.line(pts + [pts[0]], fill=INK, width=width * K, joint="curve")
+    d.polygon(pts, fill=fill)
+    w = width * K
+    d.line(pts + [pts[0]], fill=INK, width=w, joint="curve")
+    for x, y in pts:                      # tondini ai vertici: contorno continuo senza spigoli
+        d.ellipse((x - w / 2, y - w / 2, x + w / 2, y + w / 2), fill=INK)
 
 def sparkle(d, cx, cy, r, fill):
     pts = []
@@ -46,7 +50,7 @@ d = ImageDraw.Draw(img)
 
 # macchia di colore morbida dietro (stile gouache)
 blob = Image.new("L", (W, W), 0)
-ImageDraw.Draw(blob).polygon([wob(x * K, y * K, 6) for x, y in ellipse_pts(512, 540, 400, 390, 240)], fill=255)
+ImageDraw.Draw(blob).polygon([wob(x * K, y * K, 5) for x, y in ellipse_pts(512, 540, 400, 390, 240)], fill=255)
 img.paste(Image.new("RGB", (W, W), (236, 198, 170)), mask=blob)
 
 # --- walkie-talkie su layer separato, inclinato ---
@@ -59,7 +63,7 @@ shape(wd, rrect_pts(340, 360, 660, 900, 70), CLAY, 12)                   # corpo
 shape(wd, rrect_pts(380, 400, 480, 440, 14), CREAM, 8)                  # display
 for i in range(4):                                                      # griglia altoparlante
     y = 480 + i * 38
-    wd.line([wob(400 * K, y * K, 2), wob(620 * K, y * K, 2)], fill=INK, width=11 * K)
+    wd.line([wob(400 * K, y * K, 1), wob(620 * K, y * K, 1)], fill=INK, width=11 * K)
     for x in (400, 620):
         wd.ellipse(((x - 5.5) * K, (y - 5.5) * K, (x + 5.5) * K, (y + 5.5) * K), fill=INK)
 shape(wd, ellipse_pts(500, 770, 78, 78), CREAM, 11)                      # tasto PTT
@@ -86,7 +90,7 @@ def arc(cx, cy, r, a0, a1, w):
     pts = []
     for i in range(30):
         a = math.radians(a0 + (a1 - a0) * i / 29)
-        pts.append(wob((cx + r * math.cos(a)) * K, (cy + r * math.sin(a)) * K, 2))
+        pts.append(wob((cx + r * math.cos(a)) * K, (cy + r * math.sin(a)) * K, 1))
     d.line(pts, fill=INK, width=w * K, joint="curve")
     for p in (pts[0], pts[-1]):
         d.ellipse((p[0] - w * K / 2, p[1] - w * K / 2, p[0] + w * K / 2, p[1] + w * K / 2), fill=INK)
