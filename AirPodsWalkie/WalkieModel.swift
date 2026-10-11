@@ -1,4 +1,3 @@
-import ActivityKit
 import AVFoundation
 import MediaPlayer
 import SwiftUI
@@ -46,7 +45,7 @@ final class WalkieModel: ObservableObject {
 
     @Published var pairCode: String { didSet { UserDefaults.standard.set(pairCode, forKey: "pairCode") } }
     @Published var myName: String { didSet { UserDefaults.standard.set(myName, forKey: "myName") } }
-    @Published var partnerName: String { didSet { UserDefaults.standard.set(partnerName, forKey: "partnerName"); if oldValue != partnerName { syncLiveActivity() } } }
+    @Published var partnerName: String { didSet { UserDefaults.standard.set(partnerName, forKey: "partnerName") } }
     @Published var linkMode: LinkMode { didSet { UserDefaults.standard.set(linkMode.rawValue, forKey: "link") } }
     @Published var relayURL: String { didSet { UserDefaults.standard.set(relayURL, forKey: "relayURL") } }
     @Published var highQuality: Bool { didSet { UserDefaults.standard.set(highQuality, forKey: "hq") } }
@@ -56,14 +55,14 @@ final class WalkieModel: ObservableObject {
     /// Beep di inizio/fine trasmissione e "roger".
     @Published var sounds: Bool { didSet { UserDefaults.standard.set(sounds, forKey: "sounds") } }
     /// Test eco: il relay rimanda indietro la nostra voce (prova con un solo telefono).
-    @Published var echoTest = false { didSet { if oldValue != echoTest { syncLiveActivity() } } }
+    @Published var echoTest = false
     @Published var micDenied = false
-    @Published var isRunning = false { didSet { if oldValue != isRunning { syncLiveActivity() } } }
-    @Published var nearbyName: String? { didSet { if oldValue != nearbyName { syncLiveActivity() } } }
+    @Published var isRunning = false
+    @Published var nearbyName: String?
     @Published var nearbyConnecting = false
-    @Published var relayPeer = false { didSet { if oldValue != relayPeer { syncLiveActivity() } } }
-    @Published var talking = false { didSet { if oldValue != talking { syncLiveActivity() } } }
-    @Published var remoteTalking = false { didSet { if oldValue != remoteTalking { syncLiveActivity() } } }
+    @Published var relayPeer = false
+    @Published var talking = false
+    @Published var remoteTalking = false
     @Published var level: Float = 0
     /// Livello della voce dell'altro (anima gli anelli mentre parla).
     @Published var remoteLevel: Float = 0
@@ -73,9 +72,6 @@ final class WalkieModel: ObservableObject {
     @Published var error: String?
 
     private let audio = AudioEngine()
-    private var liveActivity: AnyObject?
-    private var phaseSince = Date()
-    private var lastPhase = ""
     private var nearby: PeerTransport?
     private var relay: RelayTransport?
     private var voxHoldUntil = Date.distantPast
@@ -117,31 +113,6 @@ final class WalkieModel: ObservableObject {
         }
         setupRemoteCommands()
         if Self.shared == nil { Self.shared = self }
-        if #available(iOS 16.2, *) { liveActivity = LiveActivityController() }
-        RogerBridge.toggleTalk = { [weak self] in
-            guard let self, self.isRunning, !self.handsFree else { return }
-            self.setTalking(!self.talking)
-        }
-    }
-
-    // MARK: Live Activity
-
-    private var livePhase: String {
-        if echoTest { return "echo" }
-        if talking { return "talking" }
-        if remoteTalking { return "remote" }
-        return linked ? "linked" : "waiting"
-    }
-
-    private func syncLiveActivity() {
-        guard !demo else { return }
-        if #available(iOS 16.2, *), let c = liveActivity as? LiveActivityController {
-            let phase = livePhase
-            if phase != lastPhase { lastPhase = phase; phaseSince = Date() }
-            let state = RogerAttributes.ContentState(phase: phase, partner: partnerName,
-                                                     viaInternet: nearbyName == nil && relayPeer, since: phaseSince)
-            c.sync(running: isRunning, state: state, myName: displayName)
-        }
     }
 
     var linked: Bool { nearbyName != nil || relayPeer }
