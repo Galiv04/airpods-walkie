@@ -20,6 +20,8 @@ final class RelayTransport: NSObject {
     var onRemoteTalking: ((Bool) -> Void)?
     /// Main thread: nome dell'altro.
     var onHello: ((String) -> Void)?
+    /// Main thread: andata e ritorno verso il relay, in millisecondi.
+    var onRTT: ((Int) -> Void)?
 
     /// `base` può essere https://x, wss://x o x.workers.dev. Con `echo` il relay rimanda indietro
     /// i nostri stessi pacchetti (test con un solo telefono).
@@ -42,8 +44,15 @@ final class RelayTransport: NSObject {
         lock.lock(); stopped = false; lock.unlock()
         connect()
         DispatchQueue.main.async {
-            self.pingTimer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { [weak self] _ in
-                self?.task?.sendPing { _ in }
+            // Ping ogni 5 s: tiene viva la connessione e misura la latenza (mostrata nello stato).
+            self.pingTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+                guard let self, let t = self.task else { return }
+                let sent = Date()
+                t.sendPing { error in
+                    guard error == nil else { return }
+                    let ms = Int(Date().timeIntervalSince(sent) * 1000)
+                    DispatchQueue.main.async { self.onRTT?(ms) }
+                }
             }
         }
     }

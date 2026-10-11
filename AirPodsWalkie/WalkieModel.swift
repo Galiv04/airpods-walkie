@@ -66,6 +66,8 @@ final class WalkieModel: ObservableObject {
     @Published var level: Float = 0
     /// Livello della voce dell'altro (anima gli anelli mentre parla).
     @Published var remoteLevel: Float = 0
+    /// Latenza verso il relay (ms), nil se non misurata.
+    @Published var relayRTT: Int?
     @Published var outputName = "—"
     @Published var error: String?
 
@@ -127,7 +129,7 @@ final class WalkieModel: ObservableObject {
         if !isRunning { return "Spento" }
         if echoTest { return relayPeer ? "Test eco: parla e ti risenti" : "Test eco: connessione…" }
         if let n = nearbyName { return "Collegato con \(n) · vicino" }
-        if relayPeer { return "Collegato con \(partnerLabel) · internet" }
+        if relayPeer { return "Collegato con \(partnerLabel) · internet" + (relayRTT.map { " \($0) ms" } ?? "") }
         return nearbyConnecting ? "Connessione…" : "In attesa di \(partnerLabel)…"
     }
 
@@ -203,6 +205,7 @@ final class WalkieModel: ObservableObject {
                 }
                 r.onRemoteTalking = { [weak self] on in self?.remoteChanged(on) }
                 r.onHello = { [weak self] name in self?.partnerName = name }
+                r.onRTT = { [weak self] ms in self?.relayRTT = ms }
                 relay = r
             } else if linkMode == .internet || echoTest {
                 echoTest = false
@@ -245,7 +248,7 @@ final class WalkieModel: ObservableObject {
         relay?.stop(); relay = nil
         audio.stop()
         isRunning = false; nearbyName = nil; nearbyConnecting = false; relayPeer = false
-        remoteTalking = false; level = 0; echoTest = false
+        remoteTalking = false; level = 0; echoTest = false; relayRTT = nil
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
