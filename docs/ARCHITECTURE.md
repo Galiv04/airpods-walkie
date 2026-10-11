@@ -1,8 +1,9 @@
 # Architettura
 
 ```
-mic AirPods (HFP) → voice processing (AEC/NS/AGC) → tap AVAudioEngine → converter → PCM Int16 16kHz mono
-   → [gate: PTT / latch / VOX] → MCSession.send(.unreliable) ──► altro iPhone → AVAudioPlayerNode → AirPods
+mic AirPods (HFP) → voice processing (AEC/NS/AGC) → tap AVAudioEngine → converter → PCM Int16 24kHz mono
+   → [gate: PTT / latch / VOX] → Multipeer (.unreliable)  se vicino
+                               → WebSocket relay (ChaChaPoly E2E) altrimenti ──► altro iPhone → pre-roll 80ms → AVAudioPlayerNode → AirPods
 ```
 
 ## Scelte
@@ -12,3 +13,8 @@ mic AirPods (HFP) → voice processing (AEC/NS/AGC) → tap AVAudioEngine → co
 - **Background**: `UIBackgroundModes=audio` + schermo mantenuto acceso; `MPRemoteCommandCenter` intercetta play/pausa AirPods per toggle parla. In background Multipeer non può cercare nuovi peer: avviare e collegare con app in primo piano, poi si può bloccare lo schermo.
 - **Isolamento voce**: pulsante che apre il selettore di sistema "Modalità microfono" (Voice Isolation).
 - **Distribuzione**: IPA non firmato da GitHub Actions; la firma avviene lato utente (SideStore/AltStore) – nessun certificato/secret nel repo.
+
+## Aggiornamenti v0.2
+- **Trasporto internet**: `RelayTransport` (URLSessionWebSocketTask, nessuna dipendenza) verso `relay/` (Cloudflare Worker + Durable Object per stanza, oppure Node). Scelto un relay WebSocket invece di WebRTC/LiveKit: zero dipendenze e server banale; compromesso = latenza leggermente maggiore e niente P2P. Cifratura E2E con chiave derivata dal codice stanza (`Wire.swift`, CryptoKit). Modo Auto: vicino se connesso, altrimenti internet (un solo canale alla volta per non duplicare l'audio).
+- **Qualità**: wire a 24 kHz (sfrutta super‑wideband quando disponibile). Limite fisico: in HFP il link AirPods è 16 kHz mono sia in ingresso sia in uscita; l'opzione sperimentale iOS 26 `bluetoothHighQualityRecording` migliora solo la cattura, è documentata come compatibile solo con mode `.default` (quindi senza voice processing) e segnalata con problemi (latenza maggiore, nessun audio in alcuni stack). Default = `.voiceChat` + voice processing: voce più pulita e link più robusto. L'opzione è un toggle sperimentale.
+- **Robustezza**: pre‑roll di ~80 ms a inizio frase, tetto a ~300 ms di coda (scarta), reset dopo 200 ms di silenzio; riconnessione relay con backoff; ping WebSocket ogni 20 s.
