@@ -4,7 +4,8 @@ import UIKit
 
 /// Link diretto iPhone <-> iPhone via MultipeerConnectivity (Bluetooth/Wi-Fi peer-to-peer).
 /// Funziona senza internet e in modalità aereo (con Bluetooth/Wi-Fi accesi).
-/// Entrambi i telefoni fanno advertise + browse; si collegano solo se hanno lo stesso "codice stanza".
+/// Entrambi i telefoni fanno advertise + browse; si collegano solo se hanno lo stesso codice coppia.
+/// Nel discovery Bluetooth viaggia solo l'hash del codice (`roomId`), mai il codice stesso.
 final class PeerTransport: NSObject {
     private static let serviceType = "airwalkie"
 
@@ -22,12 +23,12 @@ final class PeerTransport: NSObject {
     /// Chiamato sul main thread quando l'altro cambia stato "sta parlando".
     var onRemoteTalking: ((Bool) -> Void)?
 
-    init(room: String) {
-        self.room = room
+    init(roomId: String, name: String) {
+        self.room = roomId
         let suffix = String(UUID().uuidString.prefix(4))
-        myPeer = MCPeerID(displayName: "\(UIDevice.current.name)#\(suffix)")
+        myPeer = MCPeerID(displayName: "\(name.prefix(40))#\(suffix)")
         session = MCSession(peer: myPeer, securityIdentity: nil, encryptionPreference: .required)
-        advertiser = MCNearbyServiceAdvertiser(peer: myPeer, discoveryInfo: ["room": room],
+        advertiser = MCNearbyServiceAdvertiser(peer: myPeer, discoveryInfo: ["room": roomId],
                                                serviceType: Self.serviceType)
         browser = MCNearbyServiceBrowser(peer: myPeer, serviceType: Self.serviceType)
         super.init()
@@ -84,6 +85,7 @@ extension PeerTransport: MCSessionDelegate {
         switch msg {
         case .audio(let pcm): onAudio?(pcm)
         case .talking(let on): DispatchQueue.main.async { self.onRemoteTalking?(on) }
+        case .hello: break   // il nome arriva già dal peerID
         }
     }
 

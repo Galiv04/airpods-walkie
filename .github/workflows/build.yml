@@ -48,3 +48,19 @@ jobs:
           gh release delete latest -y --cleanup-tag || true
           gh release create latest AirPodsWalkie.ipa --prerelease \
             --title "Latest build" --notes "Unsigned IPA. Install with SideStore/AltStore/Sideloadly. See docs/INSTALL.md."
+
+  screenshots:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Screenshot nel simulatore
+        run: tools/ci-screenshots.sh screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: screenshots
+          retention-days: 14

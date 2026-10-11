@@ -14,4 +14,4 @@
 
 **Decisioni**: vedi docs/ARCHITECTURE.md. **Stato/TODO**: docs/ROADMAP.md.
 
-**Stato corrente**: v0.3 (UI ridisegnata, icona in Assets.xcassets generata da tools/make_icon.py, niente più showSystemUserInterface(.microphoneModes)) – link vicino + relay internet implementati; CI iOS da verificare dopo ultimo push; relay deployato su https://airwalkie-relay.galiv04.workers.dev (default incorporato in build.yml; vedi docs/RELAY.md); mai testato su device. Requisito iOS 16+. Guida installazione gratuita: docs/INSTALL-SENZA-DEVELOPER.md.
+**Stato corrente**: v0.4 – UI cartoon (Theme in ContentView.swift), codice coppia unico (PairCode in WalkieModel.swift, link roger://pair?code=…), parlato tocca/tieni premuto + «Mani libere» opzionale; link vicino + relay internet (https://airwalkie-relay.galiv04.workers.dev, default in build.yml). Screenshot UI automatici: job `screenshots` in build.yml → artifact (scaricabile con il tool GitHub download_workflow_run_artifact), app in modalità `-demo <stato>`; vedi docs/TESTING.md. Mai testato audio reale su due device. iOS 16+. Guida installazione: docs/INSTALL-SENZA-DEVELOPER.md.

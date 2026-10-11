@@ -7,7 +7,7 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     RELAY_URL: ""
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "0.4.0"
     CURRENT_PROJECT_VERSION: "1"
     TARGETED_DEVICE_FAMILY: "1"
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -33,3 +33,6 @@ targets:
         NSBonjourServices: ["_airwalkie._tcp", "_airwalkie._udp"]
         ITSAppUsesNonExemptEncryption: false
         RelayURL: "$(RELAY_URL)"
+        CFBundleURLTypes:
+          - CFBundleURLName: com.galiv04.airpodswalkie.pair
+            CFBundleURLSchemes: [roger]

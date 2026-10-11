@@ -2,15 +2,18 @@ import CryptoKit
 import Foundation
 
 /// Formato dei messaggi (uguale su Multipeer e relay internet).
-/// [tipo:1][payload]. tipo 1 = audio PCM Int16 @ AudioEngine.wireRate mono, tipo 2 = stato "parla" (1 byte).
+/// [tipo:1][payload]. tipo 1 = audio PCM Int16 @ AudioEngine.wireRate mono, tipo 2 = stato "parla" (1 byte),
+/// tipo 3 = nome di chi parla (UTF-8, per mostrare "Collegato con …").
 enum WireMessage {
     case audio(Data)
     case talking(Bool)
+    case hello(String)
 
     var encoded: Data {
         switch self {
         case .audio(let pcm): var d = Data([1]); d.append(pcm); return d
         case .talking(let on): return Data([2, on ? 1 : 0])
+        case .hello(let name): var d = Data([3]); d.append(Data(name.prefix(40).utf8)); return d
         }
     }
 
@@ -19,6 +22,7 @@ enum WireMessage {
         switch t {
         case 1: return .audio(data.dropFirst())
         case 2: return data.count > 1 ? .talking(data[data.startIndex + 1] == 1) : nil
+        case 3: return String(data: data.dropFirst(), encoding: .utf8).map { .hello($0) }
         default: return nil
         }
     }

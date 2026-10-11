@@ -52,4 +52,7 @@ Serve l'Apple Developer Program ($99/anno). Con quello: firma automatica in CI, 
 - *Il microfono non va*: Impostazioni › Roger › Microfono; AirPods collegati prima di avviare.
 
 ## Primo uso di Roger
-1. Collega gli AirPods a ciascun iPhone. 2. Apri Roger su entrambi con lo **stesso codice stanza**. 3. Avvia. 4. Appena compare "Vicino: …" o "Collegato via internet", puoi bloccare lo schermo. Per l'uso via internet vedi [RELAY.md](RELAY.md).
+1. Collega gli AirPods a ciascun iPhone e apri Roger su entrambi; scrivi il tuo nome in ⚙︎ Impostazioni.
+2. **Collega i due telefoni (una volta sola)**: su un telefono ⚙︎ › «Invia il codice all'altro telefono» (es. via WhatsApp); sull'altro tocca il link ricevuto, oppure ⚙︎ › «Ho un codice» e incollalo.
+3. Tocca il pulsante grande per accendere su entrambi. Quando vedi «Collegato con …» puoi bloccare lo schermo.
+4. Per parlare: tocca il pulsante (ritocca per chiudere), oppure tienilo premuto e rilascia, oppure premi l'AirPod. Via internet vedi [RELAY.md](RELAY.md).

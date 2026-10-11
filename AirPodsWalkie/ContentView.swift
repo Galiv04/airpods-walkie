@@ -9,6 +9,7 @@ enum Theme {
     static let ink = Color(red: 0.110, green: 0.094, blue: 0.086)
     static let paper = Color(red: 0.988, green: 0.980, blue: 0.961)
     static let sky = Color(red: 0.478, green: 0.667, blue: 0.784)
+    static let green = Color(red: 0.40, green: 0.66, blue: 0.42)
 }
 
 extension View {
@@ -20,103 +21,112 @@ extension View {
     }
 }
 
-private struct Sparkle: View {
-    var color: Color
-    var body: some View {
-        Image(systemName: "sparkle").font(.system(size: 22, weight: .black)).foregroundStyle(color)
-    }
-}
-
 struct ContentView: View {
     @EnvironmentObject var m: WalkieModel
     @State private var showSettings = false
+    @State private var configAtOpen = ""
     @State private var breathe = false
 
     var body: some View {
-        ZStack {
-            background
+        GeometryReader { geo in
+            // Diametro del pulsante proporzionato allo schermo: niente sbordamenti su iPhone piccoli.
+            let d = min(geo.size.width * 0.62, geo.size.height * 0.34, 260)
             VStack(spacing: 0) {
                 topBar
-                titleBlock.padding(.top, 14)
-                Spacer(minLength: 8)
-                mainButton
-                Spacer(minLength: 8)
-                bottomBar
+                statusBlock.padding(.top, 18)
+                Spacer(minLength: 12)
+                mainButton(diameter: d)
+                Spacer(minLength: 12)
+                bottomBlock
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 10)
+            .padding(.bottom, 12)
+            .frame(width: geo.size.width, height: geo.size.height)
+            .background(background(diameter: d))
         }
         .foregroundStyle(Theme.ink)
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $showSettings, onDismiss: { m.settingsClosed(previousKey: configAtOpen) }) {
             SettingsView().environmentObject(m)
         }
-        .onAppear { withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { breathe = true } }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { breathe = true }
+            if UserDefaults.standard.string(forKey: "demo") == "settings" { openSettings() }
+        }
     }
 
-    // MARK: Sfondo
+    private func openSettings() {
+        configAtOpen = m.configKey
+        showSettings = true
+    }
 
-    private var background: some View {
+    // MARK: Sfondo (non partecipa al layout)
+
+    private func background(diameter d: CGFloat) -> some View {
         ZStack {
             Theme.cream
-            Circle().fill(Theme.blob).frame(width: 470, height: 470).offset(y: 20)
-            Sparkle(color: Theme.clay).offset(x: -140, y: -250)
-            Sparkle(color: Theme.ink).scaleEffect(0.6).offset(x: -165, y: -60)
-            Sparkle(color: Theme.clay).scaleEffect(1.2).offset(x: 150, y: -120)
-            Sparkle(color: Theme.clayDark).scaleEffect(0.8).offset(x: 135, y: 290)
-        }.ignoresSafeArea()
+            Circle().fill(Theme.blob).frame(width: d * 1.75, height: d * 1.75)
+            Image(systemName: "sparkle").font(.system(size: 22, weight: .black))
+                .foregroundStyle(Theme.clay).offset(x: -d * 0.62, y: -d * 0.95)
+            Image(systemName: "sparkle").font(.system(size: 26, weight: .black))
+                .foregroundStyle(Theme.clay).offset(x: d * 0.62, y: -d * 0.55)
+            Image(systemName: "sparkle").font(.system(size: 14, weight: .black))
+                .foregroundStyle(Theme.ink).offset(x: -d * 0.7, y: d * 0.1)
+            Image(systemName: "sparkle").font(.system(size: 18, weight: .black))
+                .foregroundStyle(Theme.clayDark).offset(x: d * 0.6, y: d * 0.95)
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 
-    // MARK: Barra in alto
+    // MARK: Barra in alto: nome app + un solo pulsante impostazioni
 
     private var topBar: some View {
         HStack {
-            Button { showSettings = true } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "person.2.wave.2.fill")
-                    Text(m.room.isEmpty ? "Stanza" : m.room).lineLimit(1)
-                }
-                .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                .padding(.horizontal, 16).padding(.vertical, 10)
-                .inkCapsule()
-            }
+            Text("Roger").font(.system(size: 34, weight: .black, design: .rounded))
             Spacer()
-            Button { showSettings = true } label: {
+            Button(action: openSettings) {
                 Image(systemName: "gearshape.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 19, weight: .bold))
+                    .frame(width: 46, height: 46)
                     .inkCapsule()
             }
+            .accessibilityLabel("Impostazioni")
         }
+        .padding(.top, 6)
     }
 
-    // MARK: Titolo + stato
+    // MARK: Stato
 
-    private var statusColor: Color { !m.isRunning ? Color.gray : (m.linked ? Color.green : Theme.clay) }
+    private var statusColor: Color {
+        if !m.isRunning { return .gray }
+        return m.linked ? Theme.green : Theme.clay
+    }
 
-    private var titleBlock: some View {
-        VStack(spacing: 12) {
-            Text("Roger").font(.system(size: 40, weight: .black, design: .rounded))
+    private var statusBlock: some View {
+        VStack(spacing: 10) {
             HStack(spacing: 8) {
-                Circle().fill(statusColor).frame(width: 11, height: 11)
+                Circle().fill(statusColor).frame(width: 12, height: 12)
                     .overlay(Circle().stroke(Theme.ink, lineWidth: 2))
                 Text(m.statusText).font(.system(.subheadline, design: .rounded).weight(.bold))
+                    .lineLimit(1).minimumScaleFactor(0.8)
             }
-            .padding(.horizontal, 16).padding(.vertical, 8)
+            .padding(.horizontal, 16).padding(.vertical, 9)
             .inkCapsule()
 
-            if m.isRunning {
-                Label(m.outputName, systemImage: "airpodspro")
-                    .font(.system(.footnote, design: .rounded).weight(.semibold)).opacity(0.6)
-            }
             if m.remoteTalking {
-                Label("L'altro sta parlando", systemImage: "waveform")
+                Label("\(m.partnerName.isEmpty ? "L'altro" : m.partnerName) sta parlando", systemImage: "waveform")
                     .font(.system(.subheadline, design: .rounded).weight(.heavy))
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .inkCapsule(fill: Theme.sky)
                     .transition(.scale.combined(with: .opacity))
+            } else if m.isRunning {
+                Label(m.outputName, systemImage: "airpodspro")
+                    .font(.system(.footnote, design: .rounded).weight(.semibold)).opacity(0.65)
+                    .lineLimit(1)
             }
             if let e = m.error {
-                Text(e).font(.footnote.weight(.semibold)).foregroundStyle(Theme.clayDark).multilineTextAlignment(.center)
+                Text(e).font(.footnote.weight(.semibold)).foregroundStyle(Theme.clayDark)
+                    .multilineTextAlignment(.center)
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: m.remoteTalking)
@@ -134,99 +144,95 @@ struct ContentView: View {
         return m.talking ? Theme.cream : Theme.paper
     }
 
-    private func ringScale(_ lvl: CGFloat) -> CGFloat {
-        if m.talking { return 1 + lvl * 0.14 }
-        return breathe ? 1.03 : 0.98
+    private var ringColor: Color {
+        if m.remoteTalking { return Theme.sky }
+        return m.talking ? Theme.clay : Theme.ink.opacity(0.35)
     }
 
-    private var mainButton: some View {
-        let lvl = CGFloat(min(1, m.level * 2))
+    private func ringScale(_ i: Int) -> CGFloat {
+        let base = 1.12 + CGFloat(i) * 0.16
+        if m.talking { return base + CGFloat(min(1, m.level * 2)) * 0.12 }
+        return base * (breathe ? 1.02 : 0.98)
+    }
+
+    private func mainButton(diameter d: CGFloat) -> some View {
         let pressed = m.talking
         return ZStack {
+            // Anelli: solo scaleEffect, non allargano il layout.
             if m.isRunning {
                 ForEach(0..<3) { i in
                     Circle()
-                        .stroke(m.remoteTalking ? Theme.sky : (m.talking ? Theme.clay : Theme.ink.opacity(0.35)),
-                                style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [2, 14]))
-                        .frame(width: 262 + CGFloat(i) * 44, height: 262 + CGFloat(i) * 44)
-                        .scaleEffect(ringScale(lvl))
+                        .stroke(ringColor, style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [2, 14]))
+                        .scaleEffect(ringScale(i))
                         .opacity(1.0 - Double(i) * 0.25)
-                        .animation(.easeOut(duration: 0.12), value: m.level)
                 }
             }
-            ZStack {
-                Circle().fill(Theme.ink).offset(y: pressed ? 3 : 9)
+            Circle().fill(Theme.ink).offset(y: pressed ? 3 : 9)
+            Group {
                 Circle().fill(fillColor)
                 Circle().stroke(Theme.ink, lineWidth: 5)
-                VStack(spacing: 10) {
-                    Image(systemName: icon).font(.system(size: 56, weight: .bold))
-                    Text(label).font(.system(.headline, design: .rounded).weight(.black)).multilineTextAlignment(.center)
+                VStack(spacing: 8) {
+                    Image(systemName: icon).font(.system(size: d * 0.22, weight: .bold))
+                    Text(label).font(.system(size: max(14, d * 0.075), weight: .black, design: .rounded))
+                        .multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.7)
+                        .padding(.horizontal, d * 0.12)
                 }.foregroundStyle(contentColor)
             }
-            .frame(width: 232, height: 232)
             .offset(y: pressed ? 6 : 0)
         }
-        .frame(height: 340)
+        .frame(width: d, height: d)
+        .padding(.vertical, d * 0.2)
         .contentShape(Circle())
         .gesture(DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                if m.isRunning, m.mode == .pushToTalk, !m.talking { m.pttChanged(pressed: true) }
-            }
+            .onChanged { _ in if m.isRunning { m.pressBegan() } }
             .onEnded { _ in
-                if !m.isRunning { m.startStop() }
-                else if m.mode == .pushToTalk { m.pttChanged(pressed: false) }
-                else if m.mode == .latch { m.pttChanged(pressed: true) }
+                if m.isRunning { m.pressEnded() } else { m.startStop() }
             })
+        .animation(.easeOut(duration: 0.12), value: m.level)
         .animation(.spring(response: 0.25, dampingFraction: 0.65), value: m.talking)
         .animation(.easeInOut(duration: 0.25), value: m.isRunning)
+        .accessibilityElement()
+        .accessibilityLabel(m.isRunning ? (m.talking ? "Stai parlando. Tocca per smettere" : "Tocca per parlare") : "Avvia Roger")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { if m.isRunning { m.setTalking(!m.talking) } else { m.startStop() } }
     }
 
     private var icon: String {
         if !m.isRunning { return "power" }
-        switch m.mode {
-        case .vox: return m.talking ? "waveform" : "ear"
-        default: return m.talking ? "mic.fill" : "mic"
-        }
+        if m.handsFree { return m.talking ? "waveform" : "ear" }
+        return m.talking ? "mic.fill" : "mic"
     }
 
     private var label: String {
         if !m.isRunning { return "AVVIA" }
-        switch m.mode {
-        case .pushToTalk: return m.talking ? "PARLI" : "TIENI PREMUTO"
-        case .latch: return m.talking ? "PARLI\ntocca per finire" : "TOCCA PER PARLARE"
-        case .vox: return m.talking ? "PARLI" : "ASCOLTO VOCE…"
-        }
+        if m.handsFree { return m.talking ? "TI SENTO" : "PARLA PURE" }
+        return m.talking ? "IN ONDA" : "PARLA"
     }
 
-    // MARK: Barra in basso
+    // MARK: In basso: una riga di aiuto + Ferma
 
-    private var bottomBar: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 4) {
-                ForEach(TalkMode.allCases) { mode in
-                    Button { m.mode = mode } label: {
-                        Text(mode.rawValue).font(.system(.subheadline, design: .rounded).weight(.heavy))
-                            .frame(maxWidth: .infinity).padding(.vertical, 11)
-                            .background(m.mode == mode ? Theme.clay : .clear, in: Capsule())
-                            .overlay(Capsule().stroke(m.mode == mode ? Theme.ink : .clear, lineWidth: 2.5))
-                            .foregroundStyle(m.mode == mode ? Theme.paper : Theme.ink)
-                    }
-                }
-            }
-            .padding(5).inkCapsule()
+    private var hint: String {
+        if !m.isRunning { return "Tocca per accendere" }
+        if m.handsFree { return "Mani libere: trasmette quando parli" }
+        return m.talking ? "Tocca di nuovo per chiudere" : "Tocca per parlare · tieni premuto e rilascia · o premi l'AirPod"
+    }
 
+    private var bottomBlock: some View {
+        VStack(spacing: 14) {
+            Text(hint)
+                .font(.system(.footnote, design: .rounded).weight(.semibold))
+                .multilineTextAlignment(.center).opacity(0.7)
+                .fixedSize(horizontal: false, vertical: true)
             if m.isRunning {
                 Button { m.startStop() } label: {
-                    Label("Ferma", systemImage: "stop.fill")
+                    Label("Spegni", systemImage: "power")
                         .font(.system(.subheadline, design: .rounded).weight(.heavy))
-                        .padding(.horizontal, 24).padding(.vertical, 10)
+                        .padding(.horizontal, 24).padding(.vertical, 11)
                         .inkCapsule()
                 }
-            } else {
-                Text("Play/Pausa sugli AirPods = parla / smetti")
-                    .font(.system(.caption, design: .rounded).weight(.semibold)).opacity(0.55)
             }
         }
+        .frame(minHeight: 90, alignment: .top)
     }
 }
 
@@ -235,43 +241,116 @@ struct ContentView: View {
 struct SettingsView: View {
     @EnvironmentObject var m: WalkieModel
     @Environment(\.dismiss) private var dismiss
+    @State private var askCode = false
+    @State private var codeInput = ""
+    @State private var codeError = false
+    @State private var confirmNew = false
 
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Stanza"), footer: Text("Per internet usa un codice lungo e segreto: è anche la chiave di cifratura.")) {
-                    TextField("Codice stanza", text: $m.room)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled().disabled(m.isRunning)
+                Section {
+                    VStack(spacing: 6) {
+                        Text("Codice coppia").font(.caption.weight(.bold)).opacity(0.6)
+                        Text(PairCode.pretty(m.pairCode))
+                            .font(.system(size: 30, weight: .black, design: .monospaced))
+                            .textSelection(.enabled)
+                            .minimumScaleFactor(0.6).lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 6)
+                    ShareLink(item: m.shareText) {
+                        Label("Invia il codice all'altro telefono", systemImage: "square.and.arrow.up")
+                    }
+                    Button { codeInput = ""; askCode = true } label: {
+                        Label("Ho un codice dall'altro telefono", systemImage: "keyboard")
+                    }
+                } header: {
+                    Text("Coppia")
+                } footer: {
+                    Text("Si fa una volta sola: su un telefono tocca «Invia il codice», sull'altro apri il link ricevuto (o tocca «Ho un codice»). Il codice è unico e fa anche da chiave di cifratura.")
                 }
-                Section(header: Text("Collegamento")) {
+
+                Section {
+                    TextField("Es. Gaetano", text: $m.myName)
+                        .textInputAutocapitalization(.words).autocorrectionDisabled()
+                } header: {
+                    Text("Il tuo nome")
+                } footer: {
+                    Text("Così l'altro vede «Collegato con …».")
+                }
+
+                Section {
+                    Toggle("Mani libere (parla e trasmette)", isOn: $m.handsFree)
+                    if m.handsFree {
+                        VStack(alignment: .leading) {
+                            Text("Sensibilità voce").font(.subheadline)
+                            HStack {
+                                Image(systemName: "speaker.wave.3.fill").font(.caption)
+                                Slider(value: $m.voxThreshold, in: 0.02...0.5)
+                                Image(systemName: "speaker.wave.1.fill").font(.caption)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Come parli")
+                } footer: {
+                    Text(m.handsFree
+                         ? "Trasmette da solo quando parli. Se il rumore lo attiva per sbaglio, sposta il cursore verso destra."
+                         : "Tocca il pulsante per parlare e ritocca per chiudere, oppure tienilo premuto e rilascia. Funziona anche premendo l'AirPod (play/pausa).")
+                }
+
+                Section {
+                    Text("Con Roger acceso apri il Centro di Controllo, tocca «Modalità microfono» e scegli «Isolamento vocale»: riduce vento e motore sulla tua voce.")
+                        .font(.footnote).foregroundStyle(Theme.ink.opacity(0.7))
+                } header: {
+                    Text("Isolamento vocale")
+                }
+
+                Section {
                     Picker("Collegamento", selection: $m.linkMode) {
                         ForEach(LinkMode.allCases) { Text($0.rawValue).tag($0) }
-                    }.pickerStyle(.segmented).disabled(m.isRunning)
-                    TextField("Relay internet", text: $m.relayURL)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled()
-                        .keyboardType(.URL).disabled(m.isRunning)
-                }
-                if m.mode == .vox {
-                    Section(header: Text("Attivazione a voce")) {
-                        HStack { Text("Soglia"); Slider(value: $m.voxThreshold, in: 0.02...0.5) }
                     }
-                }
-                Section(header: Text("Audio")) {
-                    Toggle("Alta qualità AirPods (sperimentale, iOS 26)", isOn: $m.highQuality).disabled(m.isRunning)
-                }
-                Section(header: Text("Isolamento vocale")) {
-                    Text("Con Roger avviato apri il Centro di Controllo, tocca «Modalità microfono» e scegli «Isolamento vocale». Riduce il rumore del vento e del motore sulla tua voce.")
-                        .font(.footnote).foregroundStyle(Theme.ink.opacity(0.6))
+                    TextField("Indirizzo relay", text: $m.relayURL)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .keyboardType(.URL).font(.footnote)
+                    Toggle("Audio alta qualità AirPods (sperimentale, iOS 26)", isOn: $m.highQuality)
+                    Button("Genera un nuovo codice coppia", role: .destructive) { confirmNew = true }
+                } header: {
+                    Text("Avanzate")
+                } footer: {
+                    Text("Auto: collegamento diretto se siete vicini, altrimenti via internet. Le modifiche si applicano alla chiusura di questa schermata. Versione \(WalkieModel.appVersion).")
                 }
             }
             .scrollContentBackground(.hidden)
             .background(Theme.cream)
             .tint(Theme.clay)
-            .foregroundStyle(Theme.ink)
             .navigationTitle("Impostazioni")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fine") { dismiss() }.fontWeight(.heavy) } }
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Fine") { dismiss() }.fontWeight(.heavy)
+                }
+            }
+            .alert("Codice dell'altro telefono", isPresented: $askCode) {
+                TextField("XXXXX-XXXXX", text: $codeInput)
+                    .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                Button("Annulla", role: .cancel) {}
+                Button("Collega") { codeError = !m.joinPair(codeInput) }
+            } message: {
+                Text("Incolla o scrivi il codice di 10 caratteri ricevuto.")
+            }
+            .alert("Codice non valido", isPresented: $codeError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Il codice ha 10 caratteri (lettere e numeri), es. K7QM2-XRB4P.")
+            }
+            .confirmationDialog("Nuovo codice coppia?", isPresented: $confirmNew, titleVisibility: .visible) {
+                Button("Genera nuovo codice", role: .destructive) { m.newPairCode() }
+            } message: {
+                Text("L'altro telefono non sarà più collegato finché non gli invii il nuovo codice.")
+            }
         }
+        .navigationViewStyle(.stack)
         .preferredColorScheme(.light)
     }
 }

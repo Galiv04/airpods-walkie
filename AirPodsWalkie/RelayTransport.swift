@@ -18,6 +18,8 @@ final class RelayTransport: NSObject {
     /// Main thread: true se l'altro è presente nella stanza sul relay.
     var onState: ((Bool) -> Void)?
     var onRemoteTalking: ((Bool) -> Void)?
+    /// Main thread: nome dell'altro.
+    var onHello: ((String) -> Void)?
 
     /// `base` può essere https://x, wss://x o x.workers.dev.
     init?(base: String, room: String) {
@@ -94,6 +96,7 @@ final class RelayTransport: NSObject {
         switch msg {
         case .audio(let pcm): onAudio?(pcm)
         case .talking(let on): DispatchQueue.main.async { self.onRemoteTalking?(on) }
+        case .hello(let name): DispatchQueue.main.async { self.onHello?(name) }
         }
     }
 

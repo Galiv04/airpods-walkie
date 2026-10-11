@@ -18,3 +18,5 @@
 - [x] UI ridisegnata (v0.3): pulsante centrale Avvia/Parla, impostazioni in sheet, icona app (tools/make_icon.py); rimosso il pulsante «Isolamento voce» in-app (apriva la UI di sistema che bloccava lo schermo sfocato) → usare Centro di Controllo › Modalità microfono
 - [x] Robustezza (v0.3.1): l'audio riparte da solo dopo cambio route/modalità microfono/interruzioni; il link vicino si ricollega dopo una disconnessione; stato Now Playing = playing per il tasto AirPods (da verificare su device)
 - [x] UI v0.4: stile cartoon/inchiostro coerente con l'icona (palette crema/terracotta/inchiostro in `Theme`, ContentView.swift)
+- [x] v0.4: home senza sbordamenti (layout proporzionale), un solo pulsante impostazioni, parlato unico (tocca = parla/smetti, tieni premuto = parla finché tieni; «Mani libere» nelle impostazioni), **codice coppia personale e unico** (10 caratteri, condivisibile via link roger://pair?code=…), nome visibile all'altro, impostazioni sempre modificabili (riavvio automatico alla chiusura), screenshot UI automatici in CI (docs/TESTING.md)
+- [ ] Test unitari XCTest + test di loopback audio (vedi docs/TESTING.md)

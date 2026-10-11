@@ -8,10 +8,11 @@ mic AirPods (HFP) → voice processing (AEC/NS/AGC) → tap AVAudioEngine → co
 
 ## Scelte
 - **Trasporto: MultipeerConnectivity.** Peer‑to‑peer, cifrato (`encryptionPreference .required`), zero server, funziona offline/in aereo. Limite: portata ~30–100 m (Bluetooth/Wi‑Fi diretto), non adatto a due moto distanti. Per distanze maggiori vedi ROADMAP (trasporto internet via WebRTC/LiveKit).
-- **Pairing**: codice "stanza" nel discoveryInfo + contesto invito; ognuno annuncia e cerca, invita solo chi ha nome minore (evita inviti incrociati).
+- **Pairing (v0.4)**: ogni installazione genera un **codice coppia** casuale di 10 caratteri (~50 bit). Uno dei due lo invia all'altro (link `roger://pair?code=…` o digitandolo): da quel momento hanno lo stesso codice. Dal codice derivano l'hash `roomId` (usato nel discovery Bluetooth e nell'URL del relay: il codice non viaggia mai in chiaro) e la chiave ChaCha20‑Poly1305. Il nome scelto dall'utente è il displayName Multipeer e viaggia nel messaggio `hello` via relay. Ognuno annuncia e cerca, invita solo chi ha nome minore (evita inviti incrociati).
 - **Audio**: sessione `.playAndRecord` + `.voiceChat` + `.allowBluetooth` (AirPods usano HFP, 16 kHz mono: qualità da telefonata, ma è l'unico modo di usare il mic AirPods). `setVoiceProcessingEnabled(true)` per AEC e soppressione rumore. PCM grezzo 32 KB/s: banda irrilevante, nessun codec (latenza minima). Pacchetti ~20 ms, invio `unreliable` (come UDP), buffer di riproduzione limitato a ~250 ms con scarto oltre soglia per non accumulare latenza.
 - **Background**: `UIBackgroundModes=audio` + schermo mantenuto acceso; `MPRemoteCommandCenter` intercetta play/pausa AirPods per toggle parla. In background Multipeer non può cercare nuovi peer: avviare e collegare con app in primo piano, poi si può bloccare lo schermo.
-- **Isolamento voce**: pulsante che apre il selettore di sistema "Modalità microfono" (Voice Isolation).
+- **Isolamento voce**: dal Centro di Controllo (Modalità microfono). Il pulsante in app che apriva il selettore di sistema è stato rimosso: lasciava lo schermo sfocato/bloccato.
+- **Parlato (v0.4)**: un solo modo sul pulsante: tocco breve = accendi/spegni trasmissione, pressione lunga (>0,4 s) = trasmette finché tieni. «Mani libere» (VOX) è un'opzione nelle impostazioni.
 - **Distribuzione**: IPA non firmato da GitHub Actions; la firma avviene lato utente (SideStore/AltStore) – nessun certificato/secret nel repo.
 
 ## Aggiornamenti v0.2
