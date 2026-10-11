@@ -28,6 +28,8 @@ targets:
       path: AirPodsWalkie/Info.plist
       properties:
         CFBundleDisplayName: Roger
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [audio]
@@ -56,6 +58,8 @@ targets:
       path: RogerWidget/Info.plist
       properties:
         CFBundleDisplayName: Roger
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
   AirPodsWalkieTests:
