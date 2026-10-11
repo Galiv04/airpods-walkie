@@ -14,6 +14,10 @@ final class PairCodeTests: XCTestCase {
         XCTAssertEqual(PairCode.normalize(" K7QM2 XRB4P "), "K7QM2XRB4P")
         XCTAssertEqual(PairCode.normalize("roger://pair?code=K7QM2XRB4P"), "K7QM2XRB4P")
         XCTAssertEqual(PairCode.normalize("Parliamo con Roger roger://pair?code=K7QM2XRB4P\noppure …"), "K7QM2XRB4P")
+        XCTAssertEqual(PairCode.normalize("inserisci: K7QM2-XRB4P grazie"), "K7QM2XRB4P")
+        // Il messaggio di condivisione reale deve essere accettato per intero.
+        let m = "Parliamo con Roger 🎙️ Apri questo link sul tuo iPhone: roger://pair?code=K7QM2XRB4P\noppure in Roger › Impostazioni › «Ho un codice» inserisci: K7QM2-XRB4P"
+        XCTAssertEqual(PairCode.normalize(m), "K7QM2XRB4P")
     }
 
     func testNormalizeRejectsBadInput() {

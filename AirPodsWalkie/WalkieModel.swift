@@ -19,10 +19,15 @@ enum PairCode {
         return String((0..<10).map { _ in alphabet.randomElement(using: &g)! })
     }
 
-    /// Accetta input con trattini/spazi/minuscole o un link roger://pair?code=…; nil se non valido.
+    /// Accetta input con trattini/spazi/minuscole, un link roger://pair?code=… o l'intero messaggio condiviso.
+    /// nil se non valido.
     static func normalize(_ input: String) -> String? {
         var s = input
-        if let r = s.range(of: "code=") { s = String(s[r.upperBound...]) }
+        if let r = s.range(of: "code=") {
+            s = String(s[r.upperBound...].prefix { $0.isLetter || $0.isNumber })
+        } else if let r = s.range(of: "[A-Za-z0-9]{5}-[A-Za-z0-9]{5}", options: .regularExpression) {
+            s = String(s[r])
+        }
         let cleaned = s.uppercased().filter { alphabet.contains($0) }
         return cleaned.count == 10 ? cleaned : nil
     }
