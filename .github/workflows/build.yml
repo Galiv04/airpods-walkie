@@ -51,6 +51,7 @@ jobs:
 
   screenshots:
     runs-on: macos-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
@@ -60,7 +61,24 @@ jobs:
       - name: Screenshot nel simulatore
         run: tools/ci-screenshots.sh screenshots
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: screenshots
           path: screenshots
           retention-days: 14
+
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Unit test (simulatore)
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=[x for rt,ds in json.load(sys.stdin)["devices"].items() if "iOS" in rt for x in ds if x["name"].startswith("iPhone")]; print(d[0]["udid"])')
+          xcodebuild test -project AirPodsWalkie.xcodeproj -scheme AirPodsWalkie \
+            -destination "id=$UDID" -derivedDataPath build-test | tail -60
+          exit ${PIPESTATUS[0]}

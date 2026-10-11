@@ -36,3 +36,21 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.galiv04.airpodswalkie.pair
             CFBundleURLSchemes: [roger]
+  AirPodsWalkieTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: AirPodsWalkie
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.galiv04.airpodswalkie.tests
+schemes:
+  AirPodsWalkie:
+    build:
+      targets:
+        AirPodsWalkie: all
+        AirPodsWalkieTests: [test]
+    test:
+      targets: [AirPodsWalkieTests]

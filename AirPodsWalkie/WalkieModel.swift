@@ -44,6 +44,11 @@ final class WalkieModel: ObservableObject {
     /// Mani libere: trasmette quando rileva la voce (VOX).
     @Published var handsFree: Bool { didSet { UserDefaults.standard.set(handsFree, forKey: "handsFree"); setTalking(false) } }
     @Published var voxThreshold: Double { didSet { UserDefaults.standard.set(voxThreshold, forKey: "vox") } }
+    /// Beep di inizio/fine trasmissione e "roger".
+    @Published var sounds: Bool { didSet { UserDefaults.standard.set(sounds, forKey: "sounds") } }
+    /// Test eco: il relay rimanda indietro la nostra voce (prova con un solo telefono).
+    @Published var echoTest = false
+    @Published var micDenied = false
     @Published var isRunning = false
     @Published var nearbyName: String?
     @Published var nearbyConnecting = false
@@ -90,6 +95,7 @@ final class WalkieModel: ObservableObject {
         highQuality = d.bool(forKey: "hq")
         handsFree = d.bool(forKey: "handsFree")
         voxThreshold = d.object(forKey: "vox") as? Double ?? 0.1
+        sounds = d.object(forKey: "sounds") as? Bool ?? true
         NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.outputName = AudioEngine.currentOutputName }
         }
@@ -108,6 +114,7 @@ final class WalkieModel: ObservableObject {
 
     var statusText: String {
         if !isRunning { return "Spento" }
+        if echoTest { return relayPeer ? "Test eco: parla e ti risenti" : "Test eco: connessione…" }
         if let n = nearbyName { return "Collegato con \(n) · vicino" }
         if relayPeer { return "Collegato con \(partnerLabel) · internet" }
         return nearbyConnecting ? "Connessione…" : "In attesa di \(partnerLabel)…"
@@ -142,10 +149,18 @@ final class WalkieModel: ObservableObject {
     func start() {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             Task { @MainActor in
-                guard granted else { self.error = "Permesso microfono negato (Impostazioni › Roger)."; return }
+                self.micDenied = !granted
+                guard granted else { self.echoTest = false; self.error = "Roger non può usare il microfono."; return }
                 self.begin()
             }
         }
+    }
+
+    /// Prova con un solo telefono: via internet, il relay rimanda indietro la tua voce dopo ~1,5 s.
+    func startEchoTest() {
+        if isRunning { stop() }
+        echoTest = true
+        start()
     }
 
     private func begin() {
@@ -153,30 +168,33 @@ final class WalkieModel: ObservableObject {
         let crypto = RoomCrypto(room: pairCode)
         let audio = self.audio
 
-        if linkMode != .internet {
+        if linkMode != .internet && !echoTest {
             let t = PeerTransport(roomId: crypto.roomId, name: displayName)
             t.onAudio = { data in audio.play(data) }
             t.onState = { [weak self] name, connecting in
                 guard let self else { return }
+                if name != nil && self.nearbyName == nil && !self.relayPeer { self.cue(.linked) }
                 self.nearbyName = name
                 self.nearbyConnecting = connecting
                 if let name { self.partnerName = name }
             }
-            t.onRemoteTalking = { [weak self] on in self?.remoteTalking = on }
+            t.onRemoteTalking = { [weak self] on in self?.remoteChanged(on) }
             nearby = t
         }
-        if linkMode != .nearby {
-            if let r = RelayTransport(base: relayURL, room: pairCode) {
+        if linkMode != .nearby || echoTest {
+            if let r = RelayTransport(base: relayURL, room: pairCode, echo: echoTest) {
                 r.onAudio = { data in audio.play(data) }
                 r.onState = { [weak self] present in
                     guard let self else { return }
+                    if present && !self.relayPeer && self.nearbyName == nil { self.cue(.linked) }
                     self.relayPeer = present
-                    if present { self.relay?.send(.hello(self.displayName)) }
+                    if present && !self.echoTest { self.relay?.send(.hello(self.displayName)) }
                 }
-                r.onRemoteTalking = { [weak self] on in self?.remoteTalking = on }
+                r.onRemoteTalking = { [weak self] on in self?.remoteChanged(on) }
                 r.onHello = { [weak self] name in self?.partnerName = name }
                 relay = r
-            } else if linkMode == .internet {
+            } else if linkMode == .internet || echoTest {
+                echoTest = false
                 error = "Manca l'indirizzo del relay (Impostazioni › Avanzate)."; return
             }
         }
@@ -212,15 +230,29 @@ final class WalkieModel: ObservableObject {
         relay?.stop(); relay = nil
         audio.stop()
         isRunning = false; nearbyName = nil; nearbyConnecting = false; relayPeer = false
-        remoteTalking = false; level = 0
+        remoteTalking = false; level = 0; echoTest = false
         UIApplication.shared.isIdleTimerDisabled = false
     }
 
     // MARK: Parlato: tocca = parla/smetti, tieni premuto = parla finché tieni
 
+    private func cue(_ c: AudioEngine.Cue) {
+        if sounds { audio.playCue(c) }
+    }
+
+    /// Quando l'altro chiude la trasmissione: beep "roger".
+    private func remoteChanged(_ on: Bool) {
+        if remoteTalking && !on { cue(.roger) }
+        remoteTalking = on
+    }
+
     func setTalking(_ on: Bool) {
         guard talking != on else { return }
         talking = on
+        if isRunning && !demo {
+            UIImpactFeedbackGenerator(style: on ? .medium : .light).impactOccurred()
+            if !handsFree { cue(on ? .talkStart : .talkEnd) }
+        }
         gateOpen = on
         let msg = WireMessage.talking(on)
         // Lo stato "parla" è solo informativo: manda su tutti i canali attivi.
@@ -282,13 +314,15 @@ final class WalkieModel: ObservableObject {
         if myName.isEmpty { myName = "Gaetano" }
         partnerName = "Claudia"
         pairCode = "K7QM2XRB4P"
-        guard state != "off", state != "settings" else { return }
+        guard !["off", "settings", "onboarding"].contains(state) else { return }
         isRunning = true
         outputName = "AirPods Pro di Gaetano"
         switch state {
         case "waiting": break
         case "talking": nearbyName = "Claudia"; talking = true; level = 0.35
         case "remote": relayPeer = true; remoteTalking = true
+        case "denied": isRunning = false; micDenied = true; error = "Roger non può usare il microfono."
+        case "echo": echoTest = true; relayPeer = true
         default: nearbyName = "Claudia"
         }
     }

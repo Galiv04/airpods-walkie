@@ -30,9 +30,28 @@ export class Room {
   }
 }
 
+// Test eco: rimanda al mittente i suoi stessi messaggi (ancora cifrati) dopo ECHO_DELAY_MS.
+// Serve a provare microfono/audio/internet con un solo telefono. Il server non decifra nulla.
+const ECHO_DELAY_MS = 1500;
+function echo(request) {
+  if (request.headers.get("Upgrade") !== "websocket") return new Response("websocket only", { status: 426 });
+  const [client, server] = Object.values(new WebSocketPair());
+  server.accept();
+  server.send(JSON.stringify({ peers: 2 }));
+  let pending = 0;
+  server.addEventListener("message", (e) => {
+    if (typeof e.data === "string" || pending > 400) return;
+    pending++;
+    setTimeout(() => { pending--; try { server.send(e.data); } catch {} }, ECHO_DELAY_MS);
+  });
+  return new Response(null, { status: 101, webSocket: client });
+}
+
 export default {
   async fetch(request, env) {
-    const m = new URL(request.url).pathname.match(/^\/room\/([0-9a-f]{16,64})$/);
+    const path = new URL(request.url).pathname;
+    if (/^\/echo\/[0-9a-f]{16,64}$/.test(path)) return echo(request);
+    const m = path.match(/^\/room\/([0-9a-f]{16,64})$/);
     if (!m) return new Response("airpods-walkie relay ok");
     return env.ROOM.get(env.ROOM.idFromName(m[1])).fetch(request);
   },

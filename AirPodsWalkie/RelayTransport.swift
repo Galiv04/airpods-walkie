@@ -21,15 +21,16 @@ final class RelayTransport: NSObject {
     /// Main thread: nome dell'altro.
     var onHello: ((String) -> Void)?
 
-    /// `base` può essere https://x, wss://x o x.workers.dev.
-    init?(base: String, room: String) {
+    /// `base` può essere https://x, wss://x o x.workers.dev. Con `echo` il relay rimanda indietro
+    /// i nostri stessi pacchetti (test con un solo telefono).
+    init?(base: String, room: String, echo: Bool = false) {
         var s = base.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !s.isEmpty else { return nil }
         if !s.contains("://") { s = "wss://" + s }
         s = s.replacingOccurrences(of: "https://", with: "wss://").replacingOccurrences(of: "http://", with: "ws://")
         while s.hasSuffix("/") { s.removeLast() }
         crypto = RoomCrypto(room: room)
-        guard let u = URL(string: s + "/room/" + crypto.roomId) else { return nil }
+        guard let u = URL(string: s + (echo ? "/echo/" : "/room/") + crypto.roomId) else { return nil }
         url = u
         super.init()
         session = URLSession(configuration: .default)

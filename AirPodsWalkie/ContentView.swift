@@ -26,6 +26,8 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var configAtOpen = ""
     @State private var breathe = false
+    @State private var showOnboarding = false
+    @AppStorage("onboarded") private var onboarded = false
 
     var body: some View {
         GeometryReader { geo in
@@ -48,9 +50,17 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings, onDismiss: { m.settingsClosed(previousKey: configAtOpen) }) {
             SettingsView().environmentObject(m)
         }
+        .fullScreenCover(isPresented: $showOnboarding) {
+            OnboardingView { onboarded = true; showOnboarding = false }.environmentObject(m)
+        }
         .onAppear {
             withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { breathe = true }
-            if UserDefaults.standard.string(forKey: "demo") == "settings" { openSettings() }
+            if let demo = UserDefaults.standard.string(forKey: "demo") {
+                if demo == "settings" { openSettings() }
+                showOnboarding = demo == "onboarding"
+            } else {
+                showOnboarding = !onboarded
+            }
         }
     }
 
@@ -127,6 +137,16 @@ struct ContentView: View {
             if let e = m.error {
                 Text(e).font(.footnote.weight(.semibold)).foregroundStyle(Theme.clayDark)
                     .multilineTextAlignment(.center)
+                if m.micDenied {
+                    Button {
+                        if let u = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(u) }
+                    } label: {
+                        Label("Consenti il microfono", systemImage: "mic.badge.plus")
+                            .font(.system(.footnote, design: .rounded).weight(.heavy))
+                            .padding(.horizontal, 14).padding(.vertical, 8)
+                            .inkCapsule()
+                    }
+                }
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: m.remoteTalking)
@@ -213,6 +233,7 @@ struct ContentView: View {
 
     private var hint: String {
         if !m.isRunning { return "Tocca per accendere" }
+        if m.echoTest { return "Parla: dopo un secondo e mezzo ti risenti negli AirPods" }
         if m.handsFree { return "Mani libere: trasmette quando parli" }
         return m.talking ? "Tocca di nuovo per chiudere" : "Tocca per parlare · tieni premuto e rilascia · o premi l'AirPod"
     }
@@ -297,6 +318,20 @@ struct SettingsView: View {
                     Text(m.handsFree
                          ? "Trasmette da solo quando parli. Se il rumore lo attiva per sbaglio, sposta il cursore verso destra."
                          : "Tocca il pulsante per parlare e ritocca per chiudere, oppure tienilo premuto e rilascia. Funziona anche premendo l'AirPod (play/pausa).")
+                }
+
+                Section {
+                    Toggle("Suoni (bip di inizio e fine)", isOn: $m.sounds)
+                    Button {
+                        m.startEchoTest()
+                        dismiss()
+                    } label: {
+                        Label("Prova da solo (test eco via internet)", systemImage: "arrow.uturn.backward.circle")
+                    }
+                } header: {
+                    Text("Suoni e prova")
+                } footer: {
+                    Text("Il test eco ti rimanda la tua voce dopo 1,5 secondi: verifica AirPods, microfono e internet senza l'altro telefono.")
                 }
 
                 Section {

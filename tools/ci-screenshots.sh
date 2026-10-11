@@ -36,7 +36,7 @@ while IFS='|' read -r UDID NAME; do
   xcrun simctl bootstatus "$UDID" -b
   xcrun simctl status_bar "$UDID" override --time 9:41 --batteryLevel 100 --cellularBars 4 || true
   xcrun simctl install "$UDID" "$APP"
-  for STATE in off waiting linked talking remote settings; do
+  for STATE in onboarding off waiting linked talking remote echo denied settings; do
     xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
     xcrun simctl launch "$UDID" "$BUNDLE" -demo "$STATE"
     sleep 5

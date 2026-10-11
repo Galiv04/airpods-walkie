@@ -189,6 +189,38 @@ final class AudioEngine {
         }
     }
 
+    // MARK: Suoni di servizio (generati, non trasmessi)
+
+    enum Cue { case talkStart, talkEnd, roger, linked }
+
+    /// Beep locali: inizio/fine trasmissione, "roger" quando l'altro chiude, collegamento riuscito.
+    func playCue(_ cue: Cue) {
+        guard running else { return }
+        let tones: [(freq: Double, dur: Double)]
+        switch cue {
+        case .talkStart: tones = [(880, 0.05), (1320, 0.07)]
+        case .talkEnd: tones = [(1320, 0.05), (880, 0.07)]
+        case .roger: tones = [(1250, 0.06), (0, 0.035), (1250, 0.06)]
+        case .linked: tones = [(660, 0.07), (990, 0.07), (1320, 0.1)]
+        }
+        let rate = Self.wireRate
+        let total = tones.reduce(0) { $0 + Int($1.dur * rate) }
+        guard let buf = AVAudioPCMBuffer(pcmFormat: playFormat, frameCapacity: AVAudioFrameCount(total)) else { return }
+        buf.frameLength = AVAudioFrameCount(total)
+        let out = buf.floatChannelData![0]
+        var i = 0
+        let fade = Int(0.005 * rate)
+        for t in tones {
+            let n = Int(t.dur * rate)
+            for k in 0..<n {
+                let env = Float(min(1, Double(min(k, n - 1 - k)) / Double(fade)))
+                out[i] = t.freq == 0 ? 0 : Float(sin(2 * .pi * t.freq * Double(k) / rate)) * 0.18 * env
+                i += 1
+            }
+        }
+        player.scheduleBuffer(buf, completionHandler: nil)
+    }
+
     /// Nome del dispositivo di uscita attuale (es. "AirPods di Gaetano").
     static var currentOutputName: String {
         AVAudioSession.sharedInstance().currentRoute.outputs.first?.portName ?? "—"
