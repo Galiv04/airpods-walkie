@@ -8,7 +8,7 @@ struct AirPodsWalkieApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(model)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(.light)
         }
     }
 }
