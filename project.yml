@@ -1,0 +1,31 @@
+name: AirPodsWalkie
+options:
+  bundleIdPrefix: com.galiv04
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  AirPodsWalkie:
+    type: application
+    platform: iOS
+    sources: [AirPodsWalkie]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.galiv04.airpodswalkie
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: AirPodsWalkie/Info.plist
+      properties:
+        CFBundleDisplayName: Walkie
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [audio]
+        NSMicrophoneUsageDescription: "Serve per trasmettere la tua voce all'altro iPhone."
+        NSLocalNetworkUsageDescription: "Serve per collegarsi direttamente all'altro iPhone (walkie-talkie)."
+        NSBonjourServices: ["_airwalkie._tcp", "_airwalkie._udp"]
+        ITSAppUsesNonExemptEncryption: false
