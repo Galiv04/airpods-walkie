@@ -27,4 +27,5 @@ jobs:
           workingDirectory: relay
       - name: Skipped
         if: env.CF_TOKEN == ''
-        run: echo "CLOUDFLARE_API_TOKEN non impostato: deploy saltato (vedi docs/RELAY.md)."
+        run: |
+          echo "CLOUDFLARE_API_TOKEN non impostato, deploy saltato (vedi docs/RELAY.md)."
