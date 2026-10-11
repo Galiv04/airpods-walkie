@@ -14,3 +14,5 @@
 - [ ] Beep roger/inizio trasmissione, indicatore batteria AirPods
 
 - [ ] Pubblicazione store: vedi docs/STORE.md
+
+- [x] UI ridisegnata (v0.3): pulsante centrale Avvia/Parla, impostazioni in sheet, icona app (tools/make_icon.py); rimosso il pulsante «Isolamento voce» in-app (apriva la UI di sistema che bloccava lo schermo sfocato) → usare Centro di Controllo › Modalità microfono

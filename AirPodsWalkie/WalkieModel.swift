@@ -190,5 +190,4 @@ final class WalkieModel: ObservableObject {
         ]
     }
 
-    func showMicModes() { AVCaptureDevice.showSystemUserInterface(.microphoneModes) }
 }
