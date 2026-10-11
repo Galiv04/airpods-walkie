@@ -24,3 +24,13 @@ mic AirPods (HFP) → voice processing (AEC/NS/AGC) → tap AVAudioEngine → co
 - **Compressione ADPCM** (`ADPCM.swift`): IMA ADPCM 4 bit/campione, ~4× meno dati (12 KB/s a 24 kHz), SNR ~32 dB su voce sintetica (verificato con test). Scelto al posto di Opus: zero dipendenze, latenza zero (nessun frame di codec), CPU trascurabile, ogni pacchetto contiene lo stato del codec → la perdita di un pacchetto non si propaga. Wire tipo 4; il tipo 1 (PCM) resta decodificabile.
 - **Siri/Comandi rapidi** (`Intents.swift`, AppIntents iOS 16, nessuna estensione): «Avvia Roger», «Spegni Roger». Lingua di sviluppo del progetto = italiano, perché le frasi di Siri sono in italiano.
 - **Livello voce remota**: calcolato in riproduzione, anima gli anelli quando parla l'altro.
+
+## Aggiornamenti v0.6
+- **Buffer anti-jitter nuovo** (`JitterBuffer.swift` + `AVAudioSourceNode`): la voce in arrivo va in un buffer circolare letto direttamente dal motore audio (prima: un `scheduleBuffer` per pacchetto, fragile con la rete a raffiche). Ispirato a Chromium remoting / Mumble / NetEQ in forma semplice:
+  - pre-roll a inizio frase: 60 ms da vicino, 120 ms via internet;
+  - underrun a metà frase → dissolvenza, silenzio e ri-riempimento del pre-roll (non audio a scatti); il pre-roll cresce di 20 ms a ogni underrun (max 160/300 ms) e cala di 10 ms ogni 3 frasi pulite;
+  - overrun (raffica dopo uno stallo TCP del relay) → si scartano i campioni più vecchi tornando al target, la latenza non si accumula;
+  - fine frase (messaggio «ha smesso di parlare») o 150 ms senza pacchetti → suona il resto senza aspettare.
+  Testato con unit test (`JitterBufferTests`). Non fatti (per ora): riordino con numeri di sequenza (TCP è ordinato; Multipeer di rado riordina), time-stretching tipo NetEQ, QUIC/UDP al posto del WebSocket.
+- **Live Activity / Dynamic Island** (`RogerWidget/`, `Shared/RogerActivity.swift`, `LiveActivityController.swift`): estensione widget con `ActivityConfiguration`. Scelte per il sideload gratuito: nessun App Group (AltStore/SideStore rinominano i gruppi), nessuna push (solo aggiornamenti locali), solo `NSSupportsLiveActivities` in Info.plist. Avvio solo con app in primo piano (limite iOS), aggiornamenti solo ai cambi di stato, cronometro disegnato dal sistema (`Text(timerInterval:)`). Pulsante «Parla/Chiudi» con `LiveActivityIntent` (iOS 17+, gira nel processo dell'app; serve il telefono sbloccato). **Rischio noto**: alcuni sviluppatori riportano che gli aggiornamenti in background non arrivano se l'app è viva solo grazie all'audio (forum Apple 717701): da verificare sul telefono.
+- **PushToTalk di Apple** scartato: richiede entitlement e push, non disponibili con account gratuito.

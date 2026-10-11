@@ -15,14 +15,14 @@ final class AudioEngine {
     private var running = false
     private var observers: [NSObjectProtocol] = []
 
-    private let pendingLock = NSLock()
-    private var pendingFrames = 0
-    private let maxPendingFrames = 7_200   // ~300 ms: oltre, scarta per non accumulare latenza
-    private let prebufferFrames = 1_920    // ~80 ms di pre-roll anti-jitter all'inizio di ogni frase
-    private var primed = false
-    private var held: [AVAudioPCMBuffer] = []
-    private var heldFrames = 0
-    private var lastPacket = Date.distantPast
+    /// Voce in arrivo: buffer anti-jitter letto dal thread audio tramite `source`.
+    let jitter = JitterBuffer()
+    private lazy var source = AVAudioSourceNode(format: playFormat) { [jitter] _, _, frameCount, abl in
+        let buffers = UnsafeMutableAudioBufferListPointer(abl)
+        guard let data = buffers.first?.mData else { return noErr }
+        jitter.render(into: data.assumingMemoryBound(to: Float.self), frames: Int(frameCount))
+        return noErr
+    }
 
     /// Pacchetto PCM Int16 pronto da inviare (thread audio).
     var onCapturedPacket: ((Data) -> Void)?
@@ -57,6 +57,9 @@ final class AudioEngine {
 
         engine.attach(player)
         engine.connect(player, to: engine.mainMixerNode, format: playFormat)
+        engine.attach(source)
+        engine.connect(source, to: engine.mainMixerNode, format: playFormat)
+        jitter.reset()
 
         installTap()
         engine.prepare()
@@ -95,7 +98,7 @@ final class AudioEngine {
         guard running else { return }
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
-        pendingLock.lock(); pendingFrames = 0; primed = false; held = []; heldFrames = 0; pendingLock.unlock()
+        jitter.reset()
         do {
             try AVAudioSession.sharedInstance().setActive(true)
             installTap()
@@ -122,6 +125,8 @@ final class AudioEngine {
         player.stop()
         engine.stop()
         engine.detach(player)
+        engine.detach(source)
+        jitter.reset()
         running = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
@@ -150,51 +155,26 @@ final class AudioEngine {
         onCapturedPacket?(Data(buffer: samples))
     }
 
-    /// Riproduce un pacchetto PCM Int16 ricevuto (con pre-roll anti-jitter).
-    func play(_ data: Data) {
+    /// Accoda un pacchetto PCM Int16 ricevuto nel buffer anti-jitter.
+    func play(_ data: Data, link: JitterBuffer.Link) {
         guard running else { return }
         let n = data.count / 2
-        guard n > 0, let buf = AVAudioPCMBuffer(pcmFormat: playFormat, frameCapacity: AVAudioFrameCount(n)) else { return }
-        buf.frameLength = AVAudioFrameCount(n)
-        let dst = buf.floatChannelData![0]
-        var sum: Float = 0
+        guard n > 0 else { return }
         // Lettura byte per byte: il Data può essere una slice non allineata.
         let raw = [UInt8](data)
+        var samples = [Float](repeating: 0, count: n)
+        var sum: Float = 0
         for i in 0..<n {
             let v = Float(Int16(bitPattern: UInt16(raw[i * 2]) | UInt16(raw[i * 2 + 1]) << 8)) / 32768
-            dst[i] = v
+            samples[i] = v
             sum += v * v
         }
         onPlayLevel?(min(1, (sum / Float(n)).squareRoot() * 4))
-
-        pendingLock.lock()
-        defer { pendingLock.unlock() }
-        let now = Date()
-        if now.timeIntervalSince(lastPacket) > 0.2 { primed = false; held = []; heldFrames = 0 }
-        lastPacket = now
-        if !primed {
-            held.append(buf); heldFrames += n
-            guard heldFrames >= prebufferFrames else { return }
-            primed = true
-            let toPlay = held; held = []; heldFrames = 0
-            toPlay.forEach(schedule)
-            return
-        }
-        schedule(buf)
+        jitter.push(samples, link: link)
     }
 
-    /// Chiamare con `pendingLock` acquisito.
-    private func schedule(_ buf: AVAudioPCMBuffer) {
-        let n = Int(buf.frameLength)
-        if pendingFrames + n > maxPendingFrames { return }
-        pendingFrames += n
-        player.scheduleBuffer(buf) { [weak self] in
-            DispatchQueue.global().async {
-                guard let self else { return }
-                self.pendingLock.lock(); self.pendingFrames = max(0, self.pendingFrames - n); self.pendingLock.unlock()
-            }
-        }
-    }
+    /// L'altro ha chiuso la trasmissione: suona il resto senza aspettare.
+    func remoteSpurtEnded() { jitter.endOfSpurt() }
 
     // MARK: Suoni di servizio (generati, non trasmessi)
 

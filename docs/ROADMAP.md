@@ -22,5 +22,7 @@
 - [x] Test unitari XCTest in CI; test eco via relay; onboarding; beep roger/inizio/fine; vibrazione; gestione permesso microfono
 - [ ] Prove su due iPhone reali (audio AirPods, Multipeer, tasto AirPods in background) → raccogliere feedback
 - [x] Siri/Comandi rapidi «Avvia/Spegni Roger» (v0.5)
-- [ ] Live Activity / Dynamic Island con stato collegamento (richiede un'estensione widget: valutare impatto sul sideload gratuito)
+- [x] Live Activity / Dynamic Island (v0.6) con pulsante Parla/Chiudi (iOS 17+) – da verificare su device, soprattutto gli aggiornamenti a schermo bloccato
+- [x] Buffer anti-jitter adattivo con AVAudioSourceNode (v0.6)
+- [ ] Se servirà: numeri di sequenza + riordino, PLC (ripetizione con dissolvenza), time-stretching, trasporto QUIC/UDP
 - [ ] Indicatore qualità link (latenza/perdite) e riconnessione visibile

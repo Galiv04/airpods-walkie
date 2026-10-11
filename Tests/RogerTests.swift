@@ -138,3 +138,61 @@ final class ADPCMTests: XCTestCase {
         XCTAssertEqual(WireMessage.adpcm(a).pcm?.count, 6)
     }
 }
+
+final class JitterBufferTests: XCTestCase {
+    private let ms = 24 // campioni per ms a 24 kHz
+    private func render(_ jb: JitterBuffer, _ n: Int, at t: UInt64) -> [Float] {
+        var out = [Float](repeating: 1, count: n)
+        out.withUnsafeMutableBufferPointer { _ = jb.render(into: $0.baseAddress!, frames: n, now: t) }
+        return out
+    }
+    private func chunk(_ n: Int, _ v: Float = 0.5) -> [Float] { [Float](repeating: v, count: n) }
+    private func t(_ ms: Int) -> UInt64 { UInt64(1_000_000_000 + ms * 1_000_000) }
+
+    func testPrerollThenPlays() {
+        let jb = JitterBuffer()
+        jb.push(chunk(20 * ms), link: .nearby, now: t(0))
+        XCTAssertEqual(render(jb, 10 * ms, at: t(1)).max(), 0, "sotto il pre-roll: silenzio")
+        jb.push(chunk(20 * ms), link: .nearby, now: t(20))
+        jb.push(chunk(20 * ms), link: .nearby, now: t(40))   // 60 ms = pre-roll da vicino
+        let out = render(jb, 10 * ms, at: t(41))
+        XCTAssertGreaterThan(out.last!, 0.4)
+        XCTAssertTrue(jb.isPlaying)
+    }
+
+    func testUnderrunRaisesTargetAndRePrimes() {
+        let jb = JitterBuffer()
+        for i in 0..<3 { jb.push(chunk(20 * ms), link: .nearby, now: t(i * 20)) }
+        let before = jb.target
+        _ = render(jb, 80 * ms, at: t(60))   // chiede più di quanto c'è: underrun
+        XCTAssertFalse(jb.isPlaying)
+        XCTAssertEqual(jb.underruns, 1)
+        XCTAssertGreaterThan(jb.target, before)
+        // Arriva poco: resta in silenzio finché non riempie di nuovo il pre-roll.
+        jb.push(chunk(20 * ms), link: .nearby, now: t(70))
+        XCTAssertEqual(render(jb, 10 * ms, at: t(71)).max(), 0)
+    }
+
+    func testOverrunDropsOldest() {
+        let jb = JitterBuffer()
+        for i in 0..<40 { jb.push(chunk(20 * ms), link: .relay, now: t(i)) }   // raffica di 800 ms
+        XCTAssertLessThanOrEqual(jb.buffered, jb.target + 180 * ms)
+        XCTAssertGreaterThan(jb.droppedFrames, 0)
+    }
+
+    func testEndOfSpurtFlushesTail() {
+        let jb = JitterBuffer()
+        jb.push(chunk(20 * ms), link: .relay, now: t(0))   // sotto il pre-roll (120 ms)
+        jb.endOfSpurt()
+        XCTAssertGreaterThan(render(jb, 10 * ms, at: t(1)).last!, 0.4, "a fine frase suona subito il resto")
+        _ = render(jb, 20 * ms, at: t(11))
+        XCTAssertEqual(jb.underruns, 0, "la fine frase non è un underrun")
+    }
+
+    func testStaleTailIsPlayedEvenWithoutEndMessage() {
+        let jb = JitterBuffer()
+        jb.push(chunk(20 * ms), link: .nearby, now: t(0))
+        XCTAssertEqual(render(jb, 10 * ms, at: t(50)).max(), 0)
+        XCTAssertGreaterThan(render(jb, 10 * ms, at: t(300)).last!, 0.4)
+    }
+}

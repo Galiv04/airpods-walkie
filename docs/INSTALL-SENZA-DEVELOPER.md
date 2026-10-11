@@ -45,6 +45,9 @@ Scarica il nuovo `AirPodsWalkie.ipa` dalla release e installalo con SideStore so
 ## Se in futuro vuoi la strada senza rinnovi: TestFlight
 Serve l'Apple Developer Program ($99/anno). Con quello: firma automatica in CI, distribuzione via TestFlight (build valide 90 giorni, rinnovo = nuova build automatica), installazione con un link. È nella [roadmap](ROADMAP.md) e diventa anche il primo passo per un'eventuale pubblicazione sullo store ([STORE.md](STORE.md)).
 
+## Live Activity (Dynamic Island) – dalla v0.6
+L'app contiene un'estensione widget: usa **un App ID in più** per ogni Apple ID (2 invece di 1; il limite gratuito è 10 a settimana). Con **iLoader serve la versione 2.3.0 o successiva** (corregge «app extension is missing a valid provisioning profile»); con SideStore lascia attiva l'estensione all'installazione. Se l'installazione dell'estensione dovesse fallire, l'app funziona comunque: manca solo la Dynamic Island. Le Live Activity si possono disattivare in Impostazioni › Roger.
+
 ## Problemi comuni
 - *"Impossibile verificare l'app"*: autorizza il profilo (passo 1, ultimo punto).
 - *L'app si chiude subito dopo 7 giorni*: è scaduta, fai Refresh in SideStore.
