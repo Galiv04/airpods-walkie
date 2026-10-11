@@ -14,4 +14,4 @@
 
 **Decisioni**: vedi docs/ARCHITECTURE.md. **Stato/TODO**: docs/ROADMAP.md.
 
-**Stato corrente**: v0.2 – link vicino + relay internet implementati; CI iOS da verificare dopo ultimo push; relay NON ancora deployato (serve token Cloudflare dell'utente, vedi docs/RELAY.md); mai testato su device. Requisito iOS 16+. Guida installazione gratuita: docs/INSTALL-SENZA-DEVELOPER.md.
+**Stato corrente**: v0.2 – link vicino + relay internet implementati; CI iOS da verificare dopo ultimo push; relay deployato su https://airwalkie-relay.galiv04.workers.dev (default incorporato in build.yml; vedi docs/RELAY.md); mai testato su device. Requisito iOS 16+. Guida installazione gratuita: docs/INSTALL-SENZA-DEVELOPER.md.

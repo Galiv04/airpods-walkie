@@ -8,6 +8,8 @@ Con il collegamento diretto (Multipeer) la portata è ~30–100 m. Per veicoli d
 - Consumo dati: PCM 24 kHz ≈ 48 KB/s (~170 MB/ora) **solo mentre si parla**. Compressione Opus in roadmap.
 
 ## Deploy gratuito su Cloudflare Workers (consigliato, ~5 minuti)
+
+**Istanza attiva:** `https://airwalkie-relay.galiv04.workers.dev` (usata come default dal workflow Build IPA se la variabile `RELAY_URL` non è impostata).
 Serve un account Cloudflare gratuito (il piano free include i Durable Objects SQLite usati qui).
 1. Su <https://dash.cloudflare.com> › Profile › API Tokens › crea un token con template **Edit Cloudflare Workers**; annota anche l'**Account ID**.
 2. Nella repo GitHub › Settings › Secrets and variables › Actions: secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.

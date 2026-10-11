@@ -26,7 +26,7 @@ jobs:
             -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-            RELAY_URL="${{ vars.RELAY_URL }}" \
+            RELAY_URL="${{ vars.RELAY_URL || 'https://airwalkie-relay.galiv04.workers.dev' }}" \
             build
 
       - name: Package IPA

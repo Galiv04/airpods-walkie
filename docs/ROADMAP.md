@@ -6,7 +6,7 @@
 - [ ] Icona app e nome
 - [x] Trasporto internet (relay WebSocket + E2E) con selezione automatica (da testare con relay reale: serve deploy, vedi docs/RELAY.md)
 - [ ] Codec Opus per ridurre banda su rete mobile (ora PCM ≈ 48 KB/s)
-- [ ] Deploy del relay su Cloudflare (richiede token dell'utente) e variabile RELAY_URL
+- [x] Relay deployato su https://airwalkie-relay.galiv04.workers.dev (URL di default nel workflow Build IPA); da testare con due telefoni
 - [ ] Valutare WebRTC P2P (STUN/TURN) al posto del relay
 - [ ] Verificare su device l'opzione alta qualità iOS 26 e il tasto AirPods in background
 - [ ] Source AltStore/SideStore (JSON) per aggiornamenti OTA
