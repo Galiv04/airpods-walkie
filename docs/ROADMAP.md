@@ -11,7 +11,7 @@
 - [ ] Verificare su device l'opzione alta qualità iOS 26 e il tasto AirPods in background
 - [ ] Source AltStore/SideStore (JSON) per aggiornamenti OTA
 - [ ] Firma + TestFlight in CI (richiede Apple Developer Program)
-- [ ] Beep roger/inizio trasmissione, indicatore batteria AirPods
+- [ ] Indicatore batteria AirPods (non esposto da API pubbliche: probabilmente non fattibile)
 
 - [ ] Pubblicazione store: vedi docs/STORE.md
 
@@ -19,4 +19,7 @@
 - [x] Robustezza (v0.3.1): l'audio riparte da solo dopo cambio route/modalità microfono/interruzioni; il link vicino si ricollega dopo una disconnessione; stato Now Playing = playing per il tasto AirPods (da verificare su device)
 - [x] UI v0.4: stile cartoon/inchiostro coerente con l'icona (palette crema/terracotta/inchiostro in `Theme`, ContentView.swift)
 - [x] v0.4: home senza sbordamenti (layout proporzionale), un solo pulsante impostazioni, parlato unico (tocca = parla/smetti, tieni premuto = parla finché tieni; «Mani libere» nelle impostazioni), **codice coppia personale e unico** (10 caratteri, condivisibile via link roger://pair?code=…), nome visibile all'altro, impostazioni sempre modificabili (riavvio automatico alla chiusura), screenshot UI automatici in CI (docs/TESTING.md)
-- [ ] Test unitari XCTest + test di loopback audio (vedi docs/TESTING.md)
+- [x] Test unitari XCTest in CI; test eco via relay; onboarding; beep roger/inizio/fine; vibrazione; gestione permesso microfono
+- [ ] Prove su due iPhone reali (audio AirPods, Multipeer, tasto AirPods in background) → raccogliere feedback
+- [ ] Opus per ridurre i dati su rete mobile; Live Activity / Dynamic Island con stato collegamento
+- [ ] Indicatore qualità link (latenza/perdite) e riconnessione visibile

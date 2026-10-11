@@ -22,8 +22,10 @@ picked = []
 for pat in (r"^iPhone SE", r"^iPhone 1[0-9]e$", r"^iPhone 1[0-9]$"):
     d = first(pat)
     if d: picked.append(d); break
+# Il Pro Max raddoppia i tempi (boot simulatore ~10 min): solo con SCREENSHOT_BIG=1.
+import os
 d = first(r"Pro Max$")
-if d: picked.append(d)
+if d and os.environ.get("SCREENSHOT_BIG") == "1": picked.append(d)
 if not picked: picked = [d for d in devs if d["name"].startswith("iPhone")][:1]
 for d in picked: print(d["udid"] + "|" + d["name"])
 ')

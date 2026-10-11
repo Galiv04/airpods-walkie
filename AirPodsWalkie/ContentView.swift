@@ -74,7 +74,7 @@ struct ContentView: View {
     private func background(diameter d: CGFloat) -> some View {
         ZStack {
             Theme.cream
-            Circle().fill(Theme.blob).frame(width: d * 1.75, height: d * 1.75)
+            Circle().fill(Theme.blob).frame(width: d * 1.55, height: d * 1.55)
             Image(systemName: "sparkle").font(.system(size: 22, weight: .black))
                 .foregroundStyle(Theme.clay).offset(x: -d * 0.62, y: -d * 0.95)
             Image(systemName: "sparkle").font(.system(size: 26, weight: .black))
@@ -149,6 +149,7 @@ struct ContentView: View {
                 }
             }
         }
+        .frame(minHeight: 96, alignment: .top)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: m.remoteTalking)
     }
 
