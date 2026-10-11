@@ -13,6 +13,7 @@ final class AudioEngine {
     private let playFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: wireRate, channels: 1, interleaved: false)!
     private var converter: AVAudioConverter?
     private var running = false
+    private var observers: [NSObjectProtocol] = []
 
     private let pendingLock = NSLock()
     private var pendingFrames = 0
@@ -55,21 +56,66 @@ final class AudioEngine {
         engine.attach(player)
         engine.connect(player, to: engine.mainMixerNode, format: playFormat)
 
+        installTap()
+        engine.prepare()
+        try engine.start()
+        player.play()
+        running = true
+        observe()
+    }
+
+    private func installTap() {
         let input = engine.inputNode
         let inFormat = input.outputFormat(forBus: 0)
         converter = AVAudioConverter(from: inFormat, to: wireFormat)
         input.installTap(onBus: 0, bufferSize: 512, format: inFormat) { [weak self] buf, _ in
             self?.handleCaptured(buf)
         }
+    }
 
-        engine.prepare()
-        try engine.start()
-        player.play()
-        running = true
+    /// Il motore si ferma da solo quando cambia la route (AirPods collegati/scollegati, modalità microfono,
+    /// chiamate, Siri): ripartiamo ricreando tap e convertitore.
+    private func observe() {
+        let nc = NotificationCenter.default
+        observers.append(nc.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            self?.recover()
+        })
+        observers.append(nc.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] n in
+            let raw = n.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt ?? 0
+            if AVAudioSession.InterruptionType(rawValue: raw) == .ended { self?.recover() }
+        })
+        observers.append(nc.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.recover()
+        })
+    }
+
+    private func recover() {
+        guard running else { return }
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
+        pendingLock.lock(); pendingFrames = 0; primed = false; held = []; heldFrames = 0; pendingLock.unlock()
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            installTap()
+            engine.prepare()
+            try engine.start()
+            player.play()
+        } catch {
+            // Riprova una volta dopo un attimo (la route può essere ancora in transizione).
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                guard let self, self.running, !self.engine.isRunning else { return }
+                self.engine.inputNode.removeTap(onBus: 0)
+                self.installTap()
+                try? self.engine.start()
+                self.player.play()
+            }
+        }
     }
 
     func stop() {
         guard running else { return }
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers = []
         engine.inputNode.removeTap(onBus: 0)
         player.stop()
         engine.stop()
@@ -138,7 +184,7 @@ final class AudioEngine {
         player.scheduleBuffer(buf) { [weak self] in
             DispatchQueue.global().async {
                 guard let self else { return }
-                self.pendingLock.lock(); self.pendingFrames -= n; self.pendingLock.unlock()
+                self.pendingLock.lock(); self.pendingFrames = max(0, self.pendingFrames - n); self.pendingLock.unlock()
             }
         }
     }

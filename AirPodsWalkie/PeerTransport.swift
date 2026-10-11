@@ -13,6 +13,7 @@ final class PeerTransport: NSObject {
     private var advertiser: MCNearbyServiceAdvertiser
     private var browser: MCNearbyServiceBrowser
     private let room: String
+    private var stopped = true
 
     /// Chiamato (su thread arbitrario) per ogni pacchetto audio ricevuto.
     var onAudio: ((Data) -> Void)?
@@ -36,12 +37,14 @@ final class PeerTransport: NSObject {
     }
 
     func start() {
+        stopped = false
         advertiser.startAdvertisingPeer()
         browser.startBrowsingForPeers()
         DispatchQueue.main.async { self.onState?(nil, false) }
     }
 
     func stop() {
+        stopped = true
         advertiser.stopAdvertisingPeer()
         browser.stopBrowsingForPeers()
         session.disconnect()
@@ -66,6 +69,11 @@ extension PeerTransport: MCSessionDelegate {
             case .notConnected:
                 self.onState?(nil, false)
                 self.onRemoteTalking?(false)
+                // Il browser non rilancia foundPeer per chi è già noto: riavvia la ricerca per ricollegarsi.
+                if !self.stopped {
+                    self.browser.stopBrowsingForPeers()
+                    self.browser.startBrowsingForPeers()
+                }
             @unknown default: break
             }
         }

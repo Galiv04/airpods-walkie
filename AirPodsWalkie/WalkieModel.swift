@@ -187,7 +187,9 @@ final class WalkieModel: ObservableObject {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = [
             MPMediaItemPropertyTitle: "Walkie attivo",
             MPMediaItemPropertyArtist: "Premi play/pausa per parlare",
+            MPNowPlayingInfoPropertyPlaybackRate: 1.0,
         ]
+        MPNowPlayingInfoCenter.default().playbackState = .playing
     }
 
 }
