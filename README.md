@@ -1,4 +1,4 @@
-# AirPods Walkie
+# Roger (AirPods Walkie)
 
 Walkie-talkie iPhone ↔ iPhone pensato per **AirPods con cancellazione del rumore** in ambienti rumorosi (moto, aereo, cantiere). Uso personale, installazione fuori dall'App Store.
 

@@ -14,7 +14,7 @@ Serve un account Cloudflare gratuito (il piano free include i Durable Objects SQ
 1. Su <https://dash.cloudflare.com> › Profile › API Tokens › crea un token con template **Edit Cloudflare Workers**; annota anche l'**Account ID**.
 2. Nella repo GitHub › Settings › Secrets and variables › Actions: secrets `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 3. Actions › **Deploy relay** › Run workflow. Il log mostra l'URL `https://airwalkie-relay.<tuo-subdominio>.workers.dev`.
-4. Nella stessa pagina Settings › Variables (non secrets) crea la variabile `RELAY_URL` con quell'URL; rilancia **Build IPA**: l'indirizzo viene incorporato nell'app e non devi digitarlo. In alternativa incollalo in Walkie › Impostazioni.
+4. Nella stessa pagina Settings › Variables (non secrets) crea la variabile `RELAY_URL` con quell'URL; rilancia **Build IPA**: l'indirizzo viene incorporato nell'app e non devi digitarlo. In alternativa incollalo in Roger › Impostazioni.
 
 Alternativa locale: `cd relay && npm install && node server.js` (porta 8787); serve TLS (wss://) davanti, ad esempio un tunnel Cloudflare o Fly.io/Render.
 

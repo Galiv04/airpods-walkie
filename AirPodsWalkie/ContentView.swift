@@ -95,7 +95,7 @@ struct ContentView: View {
 
     private var titleBlock: some View {
         VStack(spacing: 12) {
-            Text("Walkie").font(.system(size: 40, weight: .black, design: .rounded))
+            Text("Roger").font(.system(size: 40, weight: .black, design: .rounded))
             HStack(spacing: 8) {
                 Circle().fill(statusColor).frame(width: 11, height: 11)
                     .overlay(Circle().stroke(Theme.ink, lineWidth: 2))
@@ -260,7 +260,7 @@ struct SettingsView: View {
                     Toggle("Alta qualità AirPods (sperimentale, iOS 26)", isOn: $m.highQuality).disabled(m.isRunning)
                 }
                 Section(header: Text("Isolamento vocale")) {
-                    Text("Con Walkie avviato apri il Centro di Controllo, tocca «Modalità microfono» e scegli «Isolamento vocale». Riduce il rumore del vento e del motore sulla tua voce.")
+                    Text("Con Roger avviato apri il Centro di Controllo, tocca «Modalità microfono» e scegli «Isolamento vocale». Riduce il rumore del vento e del motore sulla tua voce.")
                         .font(.footnote).foregroundStyle(Theme.ink.opacity(0.6))
                 }
             }

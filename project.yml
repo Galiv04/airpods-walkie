@@ -24,7 +24,7 @@ targets:
     info:
       path: AirPodsWalkie/Info.plist
       properties:
-        CFBundleDisplayName: Walkie
+        CFBundleDisplayName: Roger
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [audio]

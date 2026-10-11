@@ -2,13 +2,13 @@
 
 ## Concorrenti già presenti (ottobre 2026, ricerca web; non verificati sull'app)
 - **Talky** – walkie-talkie senza internet via Multipeer, compatibile AirPods: stesso approccio del nostro link vicino.
-- **Mini Walkie Talkie** (lancio 22/05/2026) – passa tra Bluetooth/Wi‑Fi vicino e internet (WebRTC), audio cifrato end-to-end: **il più vicino a Walkie**.
+- **Mini Walkie Talkie** (lancio 22/05/2026) – passa tra Bluetooth/Wi‑Fi vicino e internet (WebRTC), audio cifrato end-to-end: **il più vicino a Roger**.
 - **Crew Comms** – per set/eventi, AirPods + Wi‑Fi locale, PTT a bassa latenza.
 - **Zello**, Two Way, WaveTalk, Voxer, Zello Work – PTT via internet/canali, orientati a team.
 - Apple *Walkie-Talkie* (watchOS): richiede internet/FaceTime; segnalata come rimossa in watchOS 27 beta.
 - Hardware per moto (Sena, Cardo): intercom Bluetooth dedicati.
 
-**Conclusione**: il mercato non è vuoto, ma Walkie ha una nicchia: pensato per ambienti rumorosi (moto/aereo), AirPods ANC, **offline + internet con passaggio automatico**, cifratura E2E, tasto AirPods, VOX con guanti. Per differenziarsi bene servono: Opus a basso bitrate, qualità voce curata, uso hands‑free affidabile in background, UX da moto (pulsanti grandi, Siri/Shortcuts, CarPlay non necessario).
+**Conclusione**: il mercato non è vuoto, ma Roger ha una nicchia: pensato per ambienti rumorosi (moto/aereo), AirPods ANC, **offline + internet con passaggio automatico**, cifratura E2E, tasto AirPods, VOX con guanti. Per differenziarsi bene servono: Opus a basso bitrate, qualità voce curata, uso hands‑free affidabile in background, UX da moto (pulsanti grandi, Siri/Shortcuts, CarPlay non necessario).
 
 ## Cosa serve per pubblicare
 1. **Apple Developer Program** ($99/anno).

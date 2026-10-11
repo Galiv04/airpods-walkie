@@ -75,7 +75,7 @@ final class WalkieModel: ObservableObject {
     func start() {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             Task { @MainActor in
-                guard granted else { self.error = "Permesso microfono negato (Impostazioni › Walkie)."; return }
+                guard granted else { self.error = "Permesso microfono negato (Impostazioni › Roger)."; return }
                 self.begin()
             }
         }

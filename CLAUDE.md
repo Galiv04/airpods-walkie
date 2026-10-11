@@ -1,6 +1,6 @@
 # Contesto progetto (per Claude / agenti)
 
-**Obiettivo**: app iOS walkie-talkie tra due iPhone (utente + Claudia) con AirPods ANC, per ambienti rumorosi (moto, aereo). Uso personale, no App Store.
+**Nome app: Roger** (cartella/target restano AirPodsWalkie). **Obiettivo**: app iOS walkie-talkie tra due iPhone (utente + Claudia) con AirPods ANC, per ambienti rumorosi (moto, aereo). Uso personale, no App Store.
 
 **Regole di lavoro**
 - Lavorare in autonomia; l'utente (Gaetano) accetta decisioni ragionevoli e vuole essere informato nel riepilogo finale. Lingua: italiano.

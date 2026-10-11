@@ -1,4 +1,4 @@
-# Installare Walkie su iPhone senza Apple Developer Program
+# Installare Roger su iPhone senza Apple Developer Program
 
 Guida pratica per installare l'app sul tuo iPhone e su quello di Claudia **gratis**, senza App Store.
 
@@ -30,16 +30,16 @@ Fai questi passi **una volta per ogni iPhone** (ognuno con il proprio Apple ID, 
    - attiva **Modalità sviluppatore**: Impostazioni › Privacy e sicurezza › Modalità sviluppatore (riavvio richiesto);
    - installa **LocalDevVPN** (VPN locale sul telefono, non instrada traffico verso internet): serve a SideStore per rinnovare le app senza computer;
    - autorizza il profilo: Impostazioni › Generali › VPN e gestione dispositivi › tocca il tuo Apple ID › Autorizza.
-2. **Scarica l'IPA di Walkie** dal telefono: <https://github.com/Galiv04/airpods-walkie/releases/tag/latest> (file `AirPodsWalkie.ipa`).
+2. **Scarica l'IPA di Roger** dal telefono: <https://github.com/Galiv04/airpods-walkie/releases/tag/latest> (file `AirPodsWalkie.ipa`).
 3. **Apri l'IPA con SideStore** (tasto Condividi › SideStore) oppure in SideStore tab *My Apps* › **+** › scegli il file. Inserisci l'Apple ID se richiesto e attendi l'installazione.
-4. Apri **Walkie**, concedi **Microfono** e **Rete locale**.
+4. Apri **Roger**, concedi **Microfono** e **Rete locale**.
 
 ### Rinnovo (ogni 7 giorni)
 - Con **LocalDevVPN attiva**, SideStore può rinnovare in background; se vedi che l'app sta per scadere: apri SideStore › *My Apps* › tocca il contatore "**7 DAYS**" o **Refresh All** (circa 10–30 secondi, serve internet). Le impostazioni dell'app restano.
 - Abitudine pratica: un tap di refresh la domenica sera, prima di un viaggio. Non rinnovare mentre sei in volo senza internet: fallo prima di partire.
 - Se l'app scade comunque: riapri SideStore, fai Refresh, riparte (non serve reinstallare).
 
-## Aggiornare Walkie a una nuova versione
+## Aggiornare Roger a una nuova versione
 Scarica il nuovo `AirPodsWalkie.ipa` dalla release e installalo con SideStore sopra la versione esistente (stesso bundle ID: dati e impostazioni restano).
 
 ## Se in futuro vuoi la strada senza rinnovi: TestFlight
@@ -49,7 +49,7 @@ Serve l'Apple Developer Program ($99/anno). Con quello: firma automatica in CI, 
 - *"Impossibile verificare l'app"*: autorizza il profilo (passo 1, ultimo punto).
 - *L'app si chiude subito dopo 7 giorni*: è scaduta, fai Refresh in SideStore.
 - *Installazione fallita "maximum number of apps"*: rimuovi un'altra app sideloaded (limite 3).
-- *Il microfono non va*: Impostazioni › Walkie › Microfono; AirPods collegati prima di avviare.
+- *Il microfono non va*: Impostazioni › Roger › Microfono; AirPods collegati prima di avviare.
 
-## Primo uso di Walkie
-1. Collega gli AirPods a ciascun iPhone. 2. Apri Walkie su entrambi con lo **stesso codice stanza**. 3. Avvia. 4. Appena compare "Vicino: …" o "Collegato via internet", puoi bloccare lo schermo. Per l'uso via internet vedi [RELAY.md](RELAY.md).
+## Primo uso di Roger
+1. Collega gli AirPods a ciascun iPhone. 2. Apri Roger su entrambi con lo **stesso codice stanza**. 3. Avvia. 4. Appena compare "Vicino: …" o "Collegato via internet", puoi bloccare lo schermo. Per l'uso via internet vedi [RELAY.md](RELAY.md).
