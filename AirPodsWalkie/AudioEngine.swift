@@ -28,6 +28,8 @@ final class AudioEngine {
     var onCapturedPacket: ((Data) -> Void)?
     /// Livello microfono 0...1 (thread audio).
     var onLevel: ((Float) -> Void)?
+    /// Livello della voce ricevuta 0...1 (thread di rete).
+    var onPlayLevel: ((Float) -> Void)?
 
     /// - Parameter highQuality: (sperimentale, iOS 26+) registrazione AirPods "alta qualità" senza voice processing.
     ///   Di default: `.voiceChat` con voice processing = voce pulita e link Bluetooth più robusto.
@@ -155,10 +157,16 @@ final class AudioEngine {
         guard n > 0, let buf = AVAudioPCMBuffer(pcmFormat: playFormat, frameCapacity: AVAudioFrameCount(n)) else { return }
         buf.frameLength = AVAudioFrameCount(n)
         let dst = buf.floatChannelData![0]
+        var sum: Float = 0
         data.withUnsafeBytes { raw in
-            let src = raw.bindMemory(to: Int16.self)
-            for i in 0..<n { dst[i] = Float(Int16(littleEndian: src[i])) / 32768 }
+            // Lettura byte per byte: il Data può essere una slice non allineata.
+            for i in 0..<n {
+                let v = Float(Int16(bitPattern: UInt16(raw[i * 2]) | UInt16(raw[i * 2 + 1]) << 8)) / 32768
+                dst[i] = v
+                sum += v * v
+            }
         }
+        onPlayLevel?(min(1, (sum / Float(n)).squareRoot() * 4))
 
         pendingLock.lock()
         defer { pendingLock.unlock() }

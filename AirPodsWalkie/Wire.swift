@@ -3,17 +3,36 @@ import Foundation
 
 /// Formato dei messaggi (uguale su Multipeer e relay internet).
 /// [tipo:1][payload]. tipo 1 = audio PCM Int16 @ AudioEngine.wireRate mono, tipo 2 = stato "parla" (1 byte),
-/// tipo 3 = nome di chi parla (UTF-8, per mostrare "Collegato con …").
+/// tipo 3 = nome di chi parla (UTF-8, per mostrare "Collegato con …"), tipo 4 = audio compresso ADPCM (default dalla v0.5).
+/// Il tipo 1 (PCM) resta decodificabile per compatibilità con versioni vecchie.
 enum WireMessage {
     case audio(Data)
+    case adpcm(Data)
     case talking(Bool)
     case hello(String)
 
     var encoded: Data {
         switch self {
         case .audio(let pcm): var d = Data([1]); d.append(pcm); return d
+        case .adpcm(let a): var d = Data([4]); d.append(a); return d
         case .talking(let on): return Data([2, on ? 1 : 0])
         case .hello(let name): var d = Data([3]); d.append(Data(name.prefix(40).utf8)); return d
+        }
+    }
+
+    /// Audio PCM contenuto nel messaggio (decomprimendo se serve), nil se non è audio o è malformato.
+    var pcm: Data? {
+        switch self {
+        case .audio(let p): return Data(p)
+        case .adpcm(let a): return ADPCM.decode(a)
+        default: return nil
+        }
+    }
+
+    var isAudio: Bool {
+        switch self {
+        case .audio, .adpcm: return true
+        default: return false
         }
     }
 
@@ -23,6 +42,7 @@ enum WireMessage {
         case 1: return .audio(data.dropFirst())
         case 2: return data.count > 1 ? .talking(data[data.startIndex + 1] == 1) : nil
         case 3: return String(data: data.dropFirst(), encoding: .utf8).map { .hello($0) }
+        case 4: return .adpcm(Data(data.dropFirst()))
         default: return nil
         }
     }

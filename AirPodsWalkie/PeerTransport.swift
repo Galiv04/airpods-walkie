@@ -55,8 +55,7 @@ final class PeerTransport: NSObject {
 
     func send(_ msg: WireMessage) {
         guard isConnected else { return }
-        var reliable = true
-        if case .audio = msg { reliable = false }
+        let reliable = !msg.isAudio
         try? session.send(msg.encoded, toPeers: session.connectedPeers, with: reliable ? .reliable : .unreliable)
     }
 }
@@ -83,7 +82,7 @@ extension PeerTransport: MCSessionDelegate {
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
         guard let msg = WireMessage.decode(data) else { return }
         switch msg {
-        case .audio(let pcm): onAudio?(pcm)
+        case .audio, .adpcm: if let pcm = msg.pcm { onAudio?(pcm) }
         case .talking(let on): DispatchQueue.main.async { self.onRemoteTalking?(on) }
         case .hello: break   // il nome arriva già dal peerID
         }

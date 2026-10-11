@@ -40,6 +40,9 @@ enum PairCode {
 /// Collega UI, audio e trasporti (vicino via Multipeer + internet via relay).
 @MainActor
 final class WalkieModel: ObservableObject {
+    /// Istanza dell'app, per Siri/Comandi rapidi (Intents.swift).
+    static weak var shared: WalkieModel?
+
     @Published var pairCode: String { didSet { UserDefaults.standard.set(pairCode, forKey: "pairCode") } }
     @Published var myName: String { didSet { UserDefaults.standard.set(myName, forKey: "myName") } }
     @Published var partnerName: String { didSet { UserDefaults.standard.set(partnerName, forKey: "partnerName") } }
@@ -61,6 +64,8 @@ final class WalkieModel: ObservableObject {
     @Published var talking = false
     @Published var remoteTalking = false
     @Published var level: Float = 0
+    /// Livello della voce dell'altro (anima gli anelli mentre parla).
+    @Published var remoteLevel: Float = 0
     @Published var outputName = "—"
     @Published var error: String?
 
@@ -105,6 +110,7 @@ final class WalkieModel: ObservableObject {
             Task { @MainActor in self?.outputName = AudioEngine.currentOutputName }
         }
         setupRemoteCommands()
+        if Self.shared == nil { Self.shared = self }
     }
 
     var linked: Bool { nearbyName != nil || relayPeer }
@@ -205,9 +211,13 @@ final class WalkieModel: ObservableObject {
         }
 
         let n = nearby, r = relay
+        let encoder = ADPCMEncoder()
         audio.onCapturedPacket = { [weak self] data in
             guard let self, self.gateOpen else { return }
-            Self.route(.audio(data), nearby: n, relay: r)
+            Self.route(.adpcm(encoder.encode(data)), nearby: n, relay: r)
+        }
+        audio.onPlayLevel = { [weak self] lvl in
+            Task { @MainActor in self?.remoteLevel = lvl }
         }
         audio.onLevel = { [weak self] lvl in
             guard let self else { return }
@@ -248,6 +258,7 @@ final class WalkieModel: ObservableObject {
     /// Quando l'altro chiude la trasmissione: beep "roger".
     private func remoteChanged(_ on: Bool) {
         if remoteTalking && !on { cue(.roger) }
+        if !on { remoteLevel = 0 }
         remoteTalking = on
     }
 
@@ -325,7 +336,7 @@ final class WalkieModel: ObservableObject {
         switch state {
         case "waiting": break
         case "talking": nearbyName = "Claudia"; talking = true; level = 0.35
-        case "remote": relayPeer = true; remoteTalking = true
+        case "remote": relayPeer = true; remoteTalking = true; remoteLevel = 0.4
         case "denied": isRunning = false; micDenied = true; error = "Roger non può usare il microfono."
         case "echo": echoTest = true; relayPeer = true
         default: nearbyName = "Claudia"

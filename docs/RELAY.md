@@ -5,7 +5,8 @@ Con il collegamento diretto (Multipeer) la portata è ~30–100 m. Per veicoli d
 ## Come funziona
 - Modo **Auto** (default): se i telefoni si vedono direttamente usa il link vicino, altrimenti passa su internet. Il passaggio è automatico. Modo **Vicino** = solo diretto, **Internet** = solo relay.
 - L'URL del relay contiene solo un hash anonimo della stanza. L'audio è **cifrato end-to-end** (ChaCha20‑Poly1305) con una chiave derivata dal codice stanza: il relay vede solo byte cifrati. **Usa un codice lungo e segreto** per internet (es. `moto-7f3k9x2q-claudia`); un codice corto come "moto" è indovinabile.
-- Consumo dati: PCM 24 kHz ≈ 48 KB/s (~170 MB/ora) **solo mentre si parla**. Compressione Opus in roadmap.
+- Consumo dati: audio compresso ADPCM ≈ 12 KB/s (~43 MB/ora di parlato, dalla v0.5; prima 48 KB/s) **solo mentre si parla**; a riposo solo un ping ogni 20 s.
+- **Test eco**: `wss://…/echo/<id>` rimanda al mittente i suoi pacchetti (cifrati) dopo 1,5 s. Dall'app: Impostazioni › «Prova da solo».
 
 ## Deploy gratuito su Cloudflare Workers (consigliato, ~5 minuti)
 

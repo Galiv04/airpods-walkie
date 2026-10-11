@@ -173,6 +173,7 @@ struct ContentView: View {
     private func ringScale(_ i: Int) -> CGFloat {
         let base = 1.12 + CGFloat(i) * 0.16
         if m.talking { return base + CGFloat(min(1, m.level * 2)) * 0.12 }
+        if m.remoteTalking { return base + CGFloat(min(1, m.remoteLevel * 2)) * 0.12 }
         return base * (breathe ? 1.02 : 0.98)
     }
 
@@ -210,6 +211,7 @@ struct ContentView: View {
                 if m.isRunning { m.pressEnded() } else { m.startStop() }
             })
         .animation(.easeOut(duration: 0.12), value: m.level)
+        .animation(.easeOut(duration: 0.12), value: m.remoteLevel)
         .animation(.spring(response: 0.25, dampingFraction: 0.65), value: m.talking)
         .animation(.easeInOut(duration: 0.25), value: m.isRunning)
         .accessibilityElement()

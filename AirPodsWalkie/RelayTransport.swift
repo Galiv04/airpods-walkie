@@ -95,7 +95,7 @@ final class RelayTransport: NSObject {
     private func handle(_ d: Data) {
         guard let plain = crypto.open(d), let msg = WireMessage.decode(plain) else { return }
         switch msg {
-        case .audio(let pcm): onAudio?(pcm)
+        case .audio, .adpcm: if let pcm = msg.pcm { onAudio?(pcm) }
         case .talking(let on): DispatchQueue.main.async { self.onRemoteTalking?(on) }
         case .hello(let name): DispatchQueue.main.async { self.onHello?(name) }
         }
