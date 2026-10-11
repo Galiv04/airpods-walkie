@@ -102,14 +102,12 @@ struct ContentView: View {
                 ForEach(0..<3) { i in
                     Circle().stroke(accent.opacity(0.35 - Double(i) * 0.1), lineWidth: 2)
                         .frame(width: 250 + CGFloat(i) * 46, height: 250 + CGFloat(i) * 46)
-                        .scaleEffect((m.talking ? 1 + lvl * 0.12 : (breathe ? 1.03 : 0.98)))
+                        .scaleEffect(ringScale(lvl))
                         .animation(.easeOut(duration: 0.12), value: m.level)
                 }
             }
             Circle()
-                .fill(LinearGradient(colors: m.isRunning ? (m.talking ? [pink, Color(red: 0.8, green: 0.15, blue: 0.4)] : [cyan, Color(red: 0.25, green: 0.4, blue: 0.95)])
-                                                         : [Color.white.opacity(0.18), Color.white.opacity(0.08)],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                .fill(LinearGradient(colors: buttonColors, startPoint: .topLeading, endPoint: .bottomTrailing))
                 .overlay(Circle().stroke(.white.opacity(0.35), lineWidth: 2))
                 .shadow(color: (m.isRunning ? accent : .clear).opacity(0.6), radius: m.talking ? 36 : 22)
                 .frame(width: 236, height: 236)
@@ -133,6 +131,17 @@ struct ContentView: View {
             })
         .animation(.easeInOut(duration: 0.25), value: m.talking)
         .animation(.easeInOut(duration: 0.25), value: m.isRunning)
+    }
+
+    private func ringScale(_ lvl: CGFloat) -> CGFloat {
+        if m.talking { return 1 + lvl * 0.12 }
+        return breathe ? 1.03 : 0.98
+    }
+
+    private var buttonColors: [Color] {
+        if !m.isRunning { return [Color.white.opacity(0.18), Color.white.opacity(0.08)] }
+        if m.talking { return [pink, Color(red: 0.8, green: 0.15, blue: 0.4)] }
+        return [cyan, Color(red: 0.25, green: 0.4, blue: 0.95)]
     }
 
     private var icon: String {
