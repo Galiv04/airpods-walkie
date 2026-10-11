@@ -31,16 +31,14 @@ enum ADPCM {
         out.append(UInt8(state.index))
         out.append(UInt8(truncatingIfNeeded: n))
         out.append(UInt8(truncatingIfNeeded: n >> 8))
-        pcm.withUnsafeBytes { raw in
-            var byte: UInt8 = 0
-            for i in 0..<n {
-                let lo = Int(raw[i * 2]), hi = Int(raw[i * 2 + 1])
-                let sample = Int(Int16(bitPattern: UInt16(lo | hi << 8)))
-                let nib = encodeSample(sample, &state)
-                if i % 2 == 0 { byte = nib } else { out.append(byte | nib << 4) }
-            }
-            if n % 2 == 1 { out.append(byte) }
+        let raw = [UInt8](pcm)
+        var byte: UInt8 = 0
+        for i in 0..<n {
+            let sample = Int(Int16(bitPattern: UInt16(raw[i * 2]) | UInt16(raw[i * 2 + 1]) << 8))
+            let nib = encodeSample(sample, &state)
+            if i % 2 == 0 { byte = nib } else { out.append(byte | nib << 4) }
         }
+        if n % 2 == 1 { out.append(byte) }
         return out
     }
 
@@ -51,17 +49,15 @@ enum ADPCM {
         var state = State(predictor: Int(Int16(bitPattern: UInt16(d[0]) | UInt16(d[1]) << 8)), index: Int(d[2]))
         let n = Int(UInt16(d[3]) | UInt16(d[4]) << 8)
         guard state.index <= 88, d.count >= headerSize + (n + 1) / 2 else { return nil }
-        var out = Data(count: n * 2)
-        out.withUnsafeMutableBytes { raw in
-            for i in 0..<n {
-                let b = d[headerSize + i / 2]
-                let nib = i % 2 == 0 ? b & 0x0F : b >> 4
-                let s = UInt16(bitPattern: Int16(decodeSample(nib, &state)))
-                raw[i * 2] = UInt8(s & 0xFF)
-                raw[i * 2 + 1] = UInt8(s >> 8)
-            }
+        var out = [UInt8](repeating: 0, count: n * 2)
+        for i in 0..<n {
+            let b = d[headerSize + i / 2]
+            let nib = i % 2 == 0 ? b & 0x0F : b >> 4
+            let s = UInt16(bitPattern: Int16(decodeSample(nib, &state)))
+            out[i * 2] = UInt8(s & 0xFF)
+            out[i * 2 + 1] = UInt8(s >> 8)
         }
-        return out
+        return Data(out)
     }
 
     private static func encodeSample(_ sample: Int, _ st: inout State) -> UInt8 {

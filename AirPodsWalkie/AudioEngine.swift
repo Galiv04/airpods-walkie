@@ -158,13 +158,12 @@ final class AudioEngine {
         buf.frameLength = AVAudioFrameCount(n)
         let dst = buf.floatChannelData![0]
         var sum: Float = 0
-        data.withUnsafeBytes { raw in
-            // Lettura byte per byte: il Data può essere una slice non allineata.
-            for i in 0..<n {
-                let v = Float(Int16(bitPattern: UInt16(raw[i * 2]) | UInt16(raw[i * 2 + 1]) << 8)) / 32768
-                dst[i] = v
-                sum += v * v
-            }
+        // Lettura byte per byte: il Data può essere una slice non allineata.
+        let raw = [UInt8](data)
+        for i in 0..<n {
+            let v = Float(Int16(bitPattern: UInt16(raw[i * 2]) | UInt16(raw[i * 2 + 1]) << 8)) / 32768
+            dst[i] = v
+            sum += v * v
         }
         onPlayLevel?(min(1, (sum / Float(n)).squareRoot() * 4))
 
