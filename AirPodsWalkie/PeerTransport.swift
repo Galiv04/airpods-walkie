@@ -21,8 +21,6 @@ final class PeerTransport: NSObject {
     /// Chiamato sul main thread quando l'altro cambia stato "sta parlando".
     var onRemoteTalking: ((Bool) -> Void)?
 
-    private enum Header: UInt8 { case audio = 1, talking = 2 }
-
     init(room: String) {
         self.room = room
         let suffix = String(UUID().uuidString.prefix(4))
@@ -51,16 +49,11 @@ final class PeerTransport: NSObject {
 
     var isConnected: Bool { !session.connectedPeers.isEmpty }
 
-    func sendAudio(_ pcm: Data) {
+    func send(_ msg: WireMessage) {
         guard isConnected else { return }
-        var d = Data([Header.audio.rawValue]); d.append(pcm)
-        try? session.send(d, toPeers: session.connectedPeers, with: .unreliable)
-    }
-
-    func sendTalking(_ on: Bool) {
-        guard isConnected else { return }
-        let d = Data([Header.talking.rawValue, on ? 1 : 0])
-        try? session.send(d, toPeers: session.connectedPeers, with: .reliable)
+        var reliable = true
+        if case .audio = msg { reliable = false }
+        try? session.send(msg.encoded, toPeers: session.connectedPeers, with: reliable ? .reliable : .unreliable)
     }
 }
 
@@ -79,12 +72,10 @@ extension PeerTransport: MCSessionDelegate {
     }
 
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        guard let h = data.first, let header = Header(rawValue: h) else { return }
-        switch header {
-        case .audio: onAudio?(data.dropFirst())
-        case .talking:
-            let on = data.count > 1 && data[data.startIndex + 1] == 1
-            DispatchQueue.main.async { self.onRemoteTalking?(on) }
+        guard let msg = WireMessage.decode(data) else { return }
+        switch msg {
+        case .audio(let pcm): onAudio?(pcm)
+        case .talking(let on): DispatchQueue.main.async { self.onRemoteTalking?(on) }
         }
     }
 

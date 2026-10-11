@@ -1,0 +1,1 @@
+{ "name": "airwalkie-relay", "private": true, "version": "0.1.0", "main": "server.js", "dependencies": { "ws": "^8.18.0" } }

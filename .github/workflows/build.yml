@@ -26,6 +26,7 @@ jobs:
             -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            RELAY_URL="${{ vars.RELAY_URL }}" \
             build
 
       - name: Package IPA

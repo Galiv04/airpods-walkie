@@ -4,7 +4,8 @@ import Foundation
 /// Cattura il microfono (AirPods via HFP), lo converte in PCM Int16 16 kHz mono e riproduce
 /// l'audio ricevuto. Usa `.voiceChat` + voice processing per cancellazione rumore/eco.
 final class AudioEngine {
-    static let wireRate: Double = 16_000
+    /// 24 kHz: sfrutta il super-wideband quando la route lo permette, in HFP classico è un semplice upsample.
+    static let wireRate: Double = 24_000
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
@@ -14,24 +15,42 @@ final class AudioEngine {
     private var running = false
 
     private let pendingLock = NSLock()
-    private var pendingBuffers = 0
-    private let maxPendingBuffers = 12   // ~250 ms: oltre, scarta per non accumulare latenza
+    private var pendingFrames = 0
+    private let maxPendingFrames = 7_200   // ~300 ms: oltre, scarta per non accumulare latenza
+    private let prebufferFrames = 1_920    // ~80 ms di pre-roll anti-jitter all'inizio di ogni frase
+    private var primed = false
+    private var held: [AVAudioPCMBuffer] = []
+    private var heldFrames = 0
+    private var lastPacket = Date.distantPast
 
     /// Pacchetto PCM Int16 pronto da inviare (thread audio).
     var onCapturedPacket: ((Data) -> Void)?
     /// Livello microfono 0...1 (thread audio).
     var onLevel: ((Float) -> Void)?
 
-    func start() throws {
+    /// - Parameter highQuality: (sperimentale, iOS 26+) registrazione AirPods "alta qualità" senza voice processing.
+    ///   Di default: `.voiceChat` con voice processing = voce pulita e link Bluetooth più robusto.
+    func start(highQuality: Bool = false) throws {
         guard !running else { return }
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .voiceChat,
-                                options: [.allowBluetooth, .defaultToSpeaker])
-        try session.setPreferredSampleRate(Self.wireRate)
+        var useVoiceProcessing = true
+        var configured = false
+        #if compiler(>=6.2)
+        if highQuality, #available(iOS 26.0, *) {
+            try session.setCategory(.playAndRecord, mode: .default,
+                                    options: [.allowBluetoothHFP, .bluetoothHighQualityRecording, .defaultToSpeaker])
+            useVoiceProcessing = false
+            configured = true
+        }
+        #endif
+        if !configured {
+            try session.setCategory(.playAndRecord, mode: .voiceChat,
+                                    options: [.allowBluetooth, .defaultToSpeaker])
+        }
         try session.setActive(true)
 
         // Voice processing = AEC + noise suppression + AGC (deve precedere l'avvio del motore).
-        try? engine.inputNode.setVoiceProcessingEnabled(true)
+        if useVoiceProcessing { try? engine.inputNode.setVoiceProcessingEnabled(true) }
 
         engine.attach(player)
         engine.connect(player, to: engine.mainMixerNode, format: playFormat)
@@ -39,7 +58,7 @@ final class AudioEngine {
         let input = engine.inputNode
         let inFormat = input.outputFormat(forBus: 0)
         converter = AVAudioConverter(from: inFormat, to: wireFormat)
-        input.installTap(onBus: 0, bufferSize: 1024, format: inFormat) { [weak self] buf, _ in
+        input.installTap(onBus: 0, bufferSize: 512, format: inFormat) { [weak self] buf, _ in
             self?.handleCaptured(buf)
         }
 
@@ -83,26 +102,44 @@ final class AudioEngine {
         onCapturedPacket?(Data(buffer: samples))
     }
 
-    /// Riproduce un pacchetto PCM Int16 ricevuto.
+    /// Riproduce un pacchetto PCM Int16 ricevuto (con pre-roll anti-jitter).
     func play(_ data: Data) {
         guard running else { return }
         let n = data.count / 2
         guard n > 0, let buf = AVAudioPCMBuffer(pcmFormat: playFormat, frameCapacity: AVAudioFrameCount(n)) else { return }
-
-        pendingLock.lock()
-        if pendingBuffers >= maxPendingBuffers { pendingLock.unlock(); return }
-        pendingBuffers += 1
-        pendingLock.unlock()
-
         buf.frameLength = AVAudioFrameCount(n)
         let dst = buf.floatChannelData![0]
         data.withUnsafeBytes { raw in
             let src = raw.bindMemory(to: Int16.self)
             for i in 0..<n { dst[i] = Float(Int16(littleEndian: src[i])) / 32768 }
         }
+
+        pendingLock.lock()
+        defer { pendingLock.unlock() }
+        let now = Date()
+        if now.timeIntervalSince(lastPacket) > 0.2 { primed = false; held = []; heldFrames = 0 }
+        lastPacket = now
+        if !primed {
+            held.append(buf); heldFrames += n
+            guard heldFrames >= prebufferFrames else { return }
+            primed = true
+            let toPlay = held; held = []; heldFrames = 0
+            toPlay.forEach(schedule)
+            return
+        }
+        schedule(buf)
+    }
+
+    /// Chiamare con `pendingLock` acquisito.
+    private func schedule(_ buf: AVAudioPCMBuffer) {
+        let n = Int(buf.frameLength)
+        if pendingFrames + n > maxPendingFrames { return }
+        pendingFrames += n
         player.scheduleBuffer(buf) { [weak self] in
-            guard let self else { return }
-            self.pendingLock.lock(); self.pendingBuffers -= 1; self.pendingLock.unlock()
+            DispatchQueue.global().async {
+                guard let self else { return }
+                self.pendingLock.lock(); self.pendingFrames -= n; self.pendingLock.unlock()
+            }
         }
     }
 

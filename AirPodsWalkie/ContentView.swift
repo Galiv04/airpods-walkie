@@ -15,9 +15,7 @@ struct ContentView: View {
     }
 
     private var status: (text: String, color: Color) {
-        if !m.isRunning { return ("Spento", .gray) }
-        if let n = m.peerName { return ("Collegato a \(n)", .green) }
-        return (m.connecting ? "Connessione…" : "Cerco l'altro iPhone…", .orange)
+        (m.statusText, !m.isRunning ? .gray : (m.linked ? .green : .orange))
     }
 
     private var header: some View {
@@ -65,6 +63,19 @@ struct ContentView: View {
 
             if m.mode == .vox {
                 HStack { Text("Soglia voce"); Slider(value: $m.voxThreshold, in: 0.02...0.5) }
+            }
+            Picker("Collegamento", selection: $m.linkMode) {
+                ForEach(LinkMode.allCases) { Text($0.rawValue).tag($0) }
+            }.pickerStyle(.segmented).disabled(m.isRunning)
+            DisclosureGroup("Impostazioni") {
+                VStack(alignment: .leading, spacing: 10) {
+                    TextField("Relay internet (es. xxx.workers.dev)", text: $m.relayURL)
+                        .textFieldStyle(.roundedBorder).textInputAutocapitalization(.never)
+                        .autocorrectionDisabled().keyboardType(.URL).disabled(m.isRunning)
+                    Toggle("Alta qualità AirPods (sperimentale, iOS 26)", isOn: $m.highQuality).disabled(m.isRunning)
+                    Text("Per internet usa un codice stanza lungo e segreto: è anche la chiave di cifratura.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }.padding(.top, 6)
             }
             HStack {
                 Text("Stanza")
