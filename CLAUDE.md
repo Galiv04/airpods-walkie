@@ -14,4 +14,4 @@
 
 **Decisioni**: vedi docs/ARCHITECTURE.md. **Stato/TODO**: docs/ROADMAP.md.
 
-**Stato corrente**: MVP scritto, non ancora testato su dispositivo reale. Prima verifica = build CI verde.
+**Stato corrente**: MVP compila in CI (IPA in release `latest`), non ancora testato su dispositivo reale.

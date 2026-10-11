@@ -1,7 +1,7 @@
 # Roadmap / TODO
 
 - [x] MVP: Multipeer + PTT/latch/VOX + play/pausa AirPods + CI IPA
-- [ ] Verifica build CI verde e correzioni compilazione (nessun Mac locale) – 1° run: fix API showSystemUserInterface
+- [x] Build CI verde, IPA pubblicato in release `latest`
 - [ ] Test su dispositivi reali: latenza, qualità HFP, comportamento in background
 - [ ] Icona app e nome
 - [ ] Trasporto internet (WebRTC/LiveKit o relay WebSocket) per distanze > 100 m, con selezione automatica
