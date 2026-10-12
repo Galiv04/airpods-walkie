@@ -26,3 +26,4 @@
 - [x] Buffer anti-jitter adattivo con AVAudioSourceNode (v0.6)
 - [ ] Se servirà: numeri di sequenza + riordino, PLC (ripetizione con dissolvenza), time-stretching, trasporto QUIC/UDP
 - [ ] Indicatore qualità link (latenza/perdite) e riconnessione visibile
+- [x] v0.8: half-duplex anti-eco (altoparlante muto mentre trasmetti, turno di parola con segnale «occupato», mani libere protette)

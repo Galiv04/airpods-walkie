@@ -66,6 +66,8 @@ final class WalkieModel: ObservableObject {
     @Published var level: Float = 0
     /// Livello della voce dell'altro (anima gli anelli mentre parla).
     @Published var remoteLevel: Float = 0
+    /// Incrementato a ogni tentativo di parlare mentre l'altro ha la parola (anima la UI).
+    @Published var busyFlash = 0
     /// Latenza verso il relay (ms), nil se non misurata.
     @Published var relayRTT: Int?
     @Published var outputName = "—"
@@ -259,10 +261,35 @@ final class WalkieModel: ObservableObject {
     }
 
     /// Quando l'altro chiude la trasmissione: beep "roger".
+    // MARK: Half-duplex (come i veri walkie-talkie): si parla uno alla volta.
+    // 1) mentre trasmetti, il tuo altoparlante tace → la voce dell'altro non può rientrare nel tuo microfono;
+    // 2) mentre l'altro parla (e per un attimo dopo), non puoi aprire la trasmissione → «occupato»;
+    // 3) le «mani libere» non si attivano con la voce/beep dell'altro che escono dall'altoparlante.
+    // L'AEC di Apple (voice processing) resta attiva come ulteriore protezione.
+
+    /// Fine trasmissione dell'altro + coda del buffer + beep "roger" + riverbero della stanza.
+    static let remoteQuietWindow: TimeInterval = 0.6
+    private var remoteQuietUntil = Date.distantPast
+
+    /// L'altro ha la parola (o l'ha appena lasciata): non si apre la trasmissione.
+    var floorBusy: Bool { !echoTest && (remoteTalking || Date() < remoteQuietUntil) }
+
     private func remoteChanged(_ on: Bool) {
-        if remoteTalking && !on { audio.remoteSpurtEnded(); cue(.roger) }
+        if remoteTalking && !on {
+            audio.remoteSpurtEnded()
+            remoteQuietUntil = Date().addingTimeInterval(Self.remoteQuietWindow)
+            cue(.roger)
+        }
         if !on { remoteLevel = 0 }
         remoteTalking = on
+    }
+
+    /// Tentativo di parlare mentre l'altro ha la parola.
+    private func signalBusy() {
+        busyFlash += 1
+        guard isRunning, !demo else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        cue(.busy)
     }
 
     func setTalking(_ on: Bool) {
@@ -273,6 +300,8 @@ final class WalkieModel: ObservableObject {
             if !handsFree { cue(on ? .talkStart : .talkEnd) }
         }
         gateOpen = on
+        // Half-duplex: mentre trasmetti l'altoparlante tace (niente eco verso l'altro). Non nel test eco.
+        audio.setPlaybackMuted(on && !echoTest)
         let msg = WireMessage.talking(on)
         // Lo stato "parla" è solo informativo: manda su tutti i canali attivi.
         if let n = nearby, n.isConnected { n.send(msg) }
@@ -281,6 +310,7 @@ final class WalkieModel: ObservableObject {
 
     func pressBegan() {
         guard isRunning, !handsFree, pressStart == nil else { return }
+        if !talking && floorBusy { signalBusy(); return }
         pressStart = Date()
         wasTalkingAtPress = talking
         if !talking { setTalking(true) }
@@ -297,6 +327,8 @@ final class WalkieModel: ObservableObject {
     private func handleLevel(_ lvl: Float) {
         level = lvl
         guard isRunning, handsFree else { return }
+        // La voce dell'altro (o il suo beep) dall'altoparlante non deve aprire la trasmissione.
+        if !talking && floorBusy { voxHoldUntil = .distantPast; return }
         if lvl > Float(voxThreshold) { voxHoldUntil = Date().addingTimeInterval(0.8) }
         setTalking(Date() < voxHoldUntil)
     }
@@ -308,6 +340,7 @@ final class WalkieModel: ObservableObject {
         let toggle: (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus = { [weak self] _ in
             Task { @MainActor in
                 guard let self, self.isRunning, !self.handsFree else { return }
+                if !self.talking && self.floorBusy { self.signalBusy(); return }
                 self.setTalking(!self.talking)
             }
             return .success

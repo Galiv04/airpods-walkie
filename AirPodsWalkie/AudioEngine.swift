@@ -173,12 +173,15 @@ final class AudioEngine {
         jitter.push(samples, link: link)
     }
 
+    /// Half-duplex: mentre trasmetti la voce in arrivo non esce dall'altoparlante (i beep sì).
+    func setPlaybackMuted(_ muted: Bool) { jitter.muted = muted }
+
     /// L'altro ha chiuso la trasmissione: suona il resto senza aspettare.
     func remoteSpurtEnded() { jitter.endOfSpurt() }
 
     // MARK: Suoni di servizio (generati, non trasmessi)
 
-    enum Cue { case talkStart, talkEnd, roger, linked }
+    enum Cue { case talkStart, talkEnd, roger, linked, busy }
 
     /// Beep locali: inizio/fine trasmissione, "roger" quando l'altro chiude, collegamento riuscito.
     func playCue(_ cue: Cue) {
@@ -189,6 +192,7 @@ final class AudioEngine {
         case .talkEnd: tones = [(1320, 0.05), (880, 0.07)]
         case .roger: tones = [(1250, 0.06), (0, 0.035), (1250, 0.06)]
         case .linked: tones = [(660, 0.07), (990, 0.07), (1320, 0.1)]
+        case .busy: tones = [(420, 0.09), (0, 0.05), (420, 0.09)]
         }
         let rate = Self.wireRate
         let total = tones.reduce(0) { $0 + Int($1.dur * rate) }

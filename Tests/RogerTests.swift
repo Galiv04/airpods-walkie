@@ -196,3 +196,40 @@ final class JitterBufferTests: XCTestCase {
         XCTAssertGreaterThan(render(jb, 10 * ms, at: t(300)).last!, 0.4)
     }
 }
+
+@MainActor
+final class HalfDuplexTests: XCTestCase {
+    func testCannotTalkWhileRemoteTalks() {
+        let m = WalkieModel()
+        m.applyDemo("linked")
+        m.handsFree = false
+        m.remoteTalking = true
+        m.pressBegan(); m.pressEnded()
+        XCTAssertFalse(m.talking, "mentre l'altro parla non si trasmette")
+        XCTAssertEqual(m.busyFlash, 1, "segnale di occupato")
+        m.remoteTalking = false
+        m.pressBegan(); m.pressEnded()
+        XCTAssertTrue(m.talking)
+    }
+
+    func testEchoTestIsNotBlocked() {
+        let m = WalkieModel()
+        m.applyDemo("echo")
+        m.handsFree = false
+        m.remoteTalking = true   // nel test eco torna indietro la propria voce
+        XCTAssertFalse(m.floorBusy)
+    }
+}
+
+final class PlaybackMuteTests: XCTestCase {
+    func testMutedOutputIsSilentButConsumes() {
+        let jb = JitterBuffer()
+        let base: UInt64 = 1_000_000_000
+        for i in 0..<4 { jb.push([Float](repeating: 0.5, count: 480), link: .nearby, now: base + UInt64(i) * 20_000_000) }
+        jb.muted = true
+        var out = [Float](repeating: 1, count: 480)
+        out.withUnsafeMutableBufferPointer { _ = jb.render(into: $0.baseAddress!, frames: 480, now: base + 80_000_000) }
+        XCTAssertEqual(out.max(), 0, "mentre trasmetti l'altoparlante tace")
+        XCTAssertEqual(jb.buffered, 1440, "ma il buffer avanza (niente ritardo accumulato)")
+    }
+}

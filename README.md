@@ -2,7 +2,7 @@
 
 Walkie-talkie iPhone ↔ iPhone pensato per **AirPods con cancellazione del rumore** in ambienti rumorosi (moto, aereo, cantiere). Uso personale, installazione fuori dall'App Store.
 
-> Stato: **v0.4** – compila in CI, test automatici e screenshot UI dal simulatore; audio reale tra due telefoni ancora da provare. Vedi [docs/ROADMAP.md](docs/ROADMAP.md).
+> Stato: **v0.8** – provata su due iPhone (funziona); CI con test automatici e screenshot UI dal simulatore. Vedi [docs/ROADMAP.md](docs/ROADMAP.md).
 
 **Requisiti**: iPhone con **iOS 16+**, AirPods (meglio Pro/Max/4 con ANC), un Apple ID gratuito per l'installazione.
 
@@ -14,6 +14,7 @@ Walkie-talkie iPhone ↔ iPhone pensato per **AirPods con cancellazione del rumo
 - **Play/Pausa sugli AirPods** (stem/tasto) = parla / smetti, anche a schermo bloccato.
 - **Codice coppia** unico generato dal telefono: lo invii all'altro con un link (`roger://pair?code=…`) e da quel momento i due telefoni si riconoscono e si collegano solo tra loro. Il codice è anche la chiave di cifratura.
 - Beep di inizio/fine e «roger» quando l'altro chiude, vibrazione al tocco.
+- **Half-duplex anti-eco** (come i walkie-talkie veri): si parla uno alla volta; mentre trasmetti il tuo altoparlante tace, mentre l'altro parla il pulsante diventa «Ascolta». Funziona anche in vivavoce senza cuffie.
 - **Test eco**: prova microfono/AirPods/internet con un solo telefono (il relay ti rimanda la voce dopo 1,5 s).
 
 ## Installazione sui due iPhone (senza Apple Developer Program)

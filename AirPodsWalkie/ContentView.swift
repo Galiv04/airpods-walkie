@@ -155,8 +155,12 @@ struct ContentView: View {
 
     // MARK: Pulsante centrale (Avvia / Parla)
 
+    /// L'altro ha la parola e io non sto trasmettendo: il pulsante diventa «ascolta».
+    private var listening: Bool { m.isRunning && !m.talking && m.remoteTalking && !m.echoTest }
+
     private var fillColor: Color {
         if !m.isRunning { return Theme.paper }
+        if listening { return Theme.sky }
         return m.talking ? Theme.ink : Theme.clay
     }
 
@@ -203,6 +207,8 @@ struct ContentView: View {
             .offset(y: pressed ? 6 : 0)
         }
         .frame(width: d, height: d)
+        .modifier(Shake(trigger: CGFloat(m.busyFlash)))
+        .animation(.easeOut(duration: 0.35), value: m.busyFlash)
         .padding(.vertical, d * 0.2)
         .contentShape(Circle())
         .gesture(DragGesture(minimumDistance: 0)
@@ -222,12 +228,14 @@ struct ContentView: View {
 
     private var icon: String {
         if !m.isRunning { return "power" }
+        if listening { return "ear" }
         if m.handsFree { return m.talking ? "waveform" : "ear" }
         return m.talking ? "mic.fill" : "mic"
     }
 
     private var label: String {
         if !m.isRunning { return "AVVIA" }
+        if listening { return "ASCOLTA" }
         if m.handsFree { return m.talking ? "TI SENTO" : "PARLA PURE" }
         return m.talking ? "IN ONDA" : "PARLA"
     }
@@ -237,6 +245,7 @@ struct ContentView: View {
     private var hint: String {
         if !m.isRunning { return "Tocca per accendere" }
         if m.echoTest { return "Parla: dopo un secondo e mezzo ti risenti negli AirPods" }
+        if listening { return "\(m.partnerName.isEmpty ? "L'altro" : m.partnerName) ha la parola: al «bip-bip» tocca a te" }
         if m.handsFree { return "Mani libere: trasmette quando parli" }
         return m.talking ? "Tocca di nuovo per chiudere" : "Tocca per parlare · tieni premuto e rilascia · o premi l'AirPod"
     }
@@ -257,6 +266,18 @@ struct ContentView: View {
             }
         }
         .frame(minHeight: 90, alignment: .top)
+    }
+}
+
+/// Oscillazione orizzontale quando si prova a parlare mentre l'altro ha la parola.
+private struct Shake: GeometryEffect {
+    var trigger: CGFloat
+    var animatableData: CGFloat {
+        get { trigger }
+        set { trigger = newValue }
+    }
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        ProjectionTransform(CGAffineTransform(translationX: 10 * sin(trigger * .pi * 6), y: 0))
     }
 }
 

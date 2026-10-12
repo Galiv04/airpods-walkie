@@ -36,6 +36,12 @@ final class JitterBuffer {
     private(set) var droppedFrames = 0
 
     private let fadeLen = 120  // 5 ms
+    private var _muted = false
+    /// Silenzia l'uscita continuando a consumare il buffer (half-duplex: mentre si trasmette).
+    var muted: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return _muted }
+        set { lock.lock(); _muted = newValue; lock.unlock() }
+    }
     /// Se arriva audio e poi niente per questo tempo, suona quello che c'è anche sotto il pre-roll.
     private let idleFlushNanos: UInt64 = 150_000_000
 
@@ -131,6 +137,7 @@ final class JitterBuffer {
                 target = min(maxTarget, target + Self.ms(20))
             }
         }
+        if _muted { out.initialize(repeating: 0, count: n) }
         return take > 0
     }
 

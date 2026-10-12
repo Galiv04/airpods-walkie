@@ -37,3 +37,12 @@ mic AirPods (HFP) → voice processing (AEC/NS/AGC) → tap AVAudioEngine → co
 
 ## Aggiornamenti v0.7
 - **Live Activity / Dynamic Island rimossa** (beneficio basso rispetto alla complessità e all'App ID extra nel sideload). Codice e istruzioni per riattivarla in `archive/live-activity/` (non compilato).
+
+## Aggiornamenti v0.8 – eco in vivavoce: half-duplex
+Problema (test reale senza cuffie, modalità «tocca e resta aperto»): eco/feedback della voce dell'altro. Causa: trasmissione contemporanea dai due lati → l'altoparlante di ciascuno rientra nel proprio microfono; l'AEC di Apple (voice processing, come FaceTime) riduce ma in vivavoce ad alto volume lascia eco residua.
+Soluzione (come walkie-talkie veri e Zello), sopra all'AEC che resta attiva:
+- **mentre trasmetti l'altoparlante tace** (`JitterBuffer.muted`: l'uscita è silenziosa ma il buffer avanza, così non si accumula ritardo; i beep locali restano udibili);
+- **controllo del turno**: mentre l'altro parla e per 0,6 s dopo (coda del buffer + beep «roger» + riverbero) non si apre la trasmissione; tocco/AirPod → segnale di «occupato» (vibrazione + doppio bip grave + pulsante che oscilla); il pulsante diventa «ASCOLTA» azzurro;
+- **mani libere**: non si attivano con la voce/beep dell'altro che esce dall'altoparlante (stessa finestra);
+- collisione (entrambi premono insieme): entrambi gli altoparlanti tacciono → nessun anello di feedback possibile.
+Il test eco è escluso (lì la voce che torna è la propria).
